@@ -22,7 +22,7 @@ q_set_size=50
 results_path_base = "results"
 checkpoint_path = "checkpoints"
 num_epochs=100
-device="cpu"
+device="gpu"
 
 if not os.path.isdir(checkpoint_path):
     os.mkdir(checkpoint_path)

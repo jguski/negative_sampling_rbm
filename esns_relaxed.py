@@ -8,11 +8,10 @@ from pykeen.typing import COLUMN_HEAD, COLUMN_TAIL, MappedTriples
 from pykeen.models import Model
 
 import os
-import sys
 import pickle
 import logging
 from tqdm import tqdm
-from typing import Tuple, List
+
 
 def absolute_similarity(relation_matrix: torch.LongTensor, entity_id: int, head_or_tail: int, mapped_triples: torch.LongTensor):
     # store relations that are observed together with e_i
@@ -50,7 +49,6 @@ class ESNSRelaxed(BernoulliNegativeSampler):
     ) -> None:
         super().__init__(mapped_triples=mapped_triples, **kwargs)
 
-        self.mapped_triples = mapped_triples
         self.index_path = index_path
         # if self.num_entities < index_column_size, only self.num_entities can be stored
         self.index_column_size = min(self.num_entities, index_column_size)
@@ -58,6 +56,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self.q_set_size = min(self.num_entities, q_set_size)
         self.similarity_function=similarity_dict[similarity_metric]
         self.model = model
+        self.mapped_triples = mapped_triples.to(self.model.device)
 
         self._index_handling()
     
@@ -97,7 +96,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
 
         # create a |E|x|R| 2D tensor that is 1 where there is a relation, and 0 where there is not
         # store all unique cominbations of (head/tail) entities with relations (to be used as indices for sparse tensor)
-        relation_indices = self.mapped_triples.index_select(dim=1, index=torch.tensor([column,1])).unique(dim=0)
+        relation_indices = self.mapped_triples.index_select(dim=1, index=torch.tensor([column,1], device=self.model.device)).unique(dim=0)
         # create the 2D tensor
         relation_matrix = torch.zeros(self.num_entities, self.num_relations, device=self.model.device)
         relation_matrix[relation_indices[:,0], relation_indices[:,1]] = 1
@@ -183,10 +182,10 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         ) < head_corruption_probability.to(device=self.model.device)
         
         # clone positive batch for corruption (.repeat_interleave creates a copy)
-        negative_batch = positive_batch.view(-1, 3).repeat_interleave(self.num_negs_per_pos, dim=0)
+        negative_batch = positive_batch.view(-1, 3).repeat_interleave(self.num_negs_per_pos, dim=0).to(self.model.device)
         # flatten mask
         head_mask = head_mask.view(-1)
-
+        
         for index, mask in (
             (COLUMN_HEAD, head_mask),
             # Tails are corrupted if heads are not corrupted
@@ -199,4 +198,5 @@ class ESNSRelaxed(BernoulliNegativeSampler):
                 size=mask.sum(),
                 max_index=self.num_entities,
             )
-        return negative_batch.view(*batch_shape, self.num_negs_per_pos, 3)
+
+        return negative_batch.view(*batch_shape, self.num_negs_per_pos, 3).to(positive_batch.device)

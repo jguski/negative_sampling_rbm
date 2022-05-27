@@ -1,23 +1,26 @@
 import os
 from pipeline import pipeline
 from esns_relaxed import ESNSRelaxed
+from esns_relaxed_no_exploration import ESNSRelaxedNoExploration
 
 experiments = [
-    {"model": "TransE", "dataset": "WN18", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed", "similarity_metric": "jaccard"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "jaccard"}
+    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
+    {"model": "RotatE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    {"model": "RotatE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
+    {"model": "RotatE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    {"model": "RotatE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"}
 ]
 
 
-neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed}
+neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_relaxed_no_exploration": ESNSRelaxedNoExploration}
 
 index_column_size=1000
 index_path_base = "EII"
-sampling_size=100
-q_set_size=50
+#sampling_size=100
+#q_set_size=50
 
 results_path_base = "results"
 checkpoint_path = "checkpoints"
@@ -38,8 +41,8 @@ for exp in experiments:
         negative_sampler_kwargs=dict(
             index_column_size=index_column_size,
             index_path=index_path_base + "/" + exp["dataset"],
-            sampling_size=sampling_size,
-            q_set_size=q_set_size,
+            #sampling_size=sampling_size,
+            #q_set_size=q_set_size,
             similarity_metric=exp["similarity_metric"]
         )
     else:

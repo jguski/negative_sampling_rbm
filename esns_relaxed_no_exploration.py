@@ -44,7 +44,7 @@ class ESNSRelaxedNoExploration(BernoulliNegativeSampler):
         if not os.path.exists(self.index_path):
             os.makedirs(self.index_path)
 
-        filename_base = self.index_path + "/" + self.__class__.__name__ + "_" + self.similarity_function.__name__
+        filename_base = self.index_path + "/" + self.__class__.__name__ + "_" + self.similarity_function.__name__  + "_k" + str(self.index_column_size)
         if not (os.path.exists(filename_base + "_h.pkl") and os.path.exists(filename_base + "_t.pkl")):
             logger.info("Creating EII {}_h.pkl".format(filename_base))
             self.eii_h = self._create_eii(COLUMN_HEAD)#.view(-1, self.index_column_size*self.num_entities)

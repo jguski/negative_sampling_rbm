@@ -44,6 +44,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         mapped_triples: MappedTriples,
         index_path: str = "esns_indices",
         index_column_size: int,
+        max_index_column_size: int = 1000,
         sampling_size: int,
         q_set_size: int,
         similarity_metric: str = "absolute",
@@ -55,6 +56,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self.index_path = index_path
         # if self.num_entities < index_column_size, only self.num_entities can be stored
         self.index_column_size = min(self.num_entities, index_column_size)
+        self.max_index_column_size = min(self.num_entities, max_index_column_size)
         self.sampling_size = sampling_size
         self.q_set_size = min(self.num_entities, q_set_size)
         self.similarity_function=similarity_dict[similarity_metric]
@@ -80,6 +82,8 @@ class ESNSRelaxed(BernoulliNegativeSampler):
             logger.info("Creating EII {}_t.npz".format(filename_base))
             self.eii_t = self._create_eii(COLUMN_TAIL)
             scipy.sparse.save_npz(filename_base + '_t.npz', self.eii_t)
+            self.eii_h = self.eii_h.tolil()
+            self.eii_t = self.eii_t.tolil()
         else: 
             logger.info("Loading EII {}_h.npz".format(filename_base))
             self.eii_h = scipy.sparse.load_npz(filename_base + '_h.npz').tolil()
@@ -127,7 +131,8 @@ class ESNSRelaxed(BernoulliNegativeSampler):
             similarities = self.similarity_function(relation_matrix=relation_matrix, mapped_triples=self.mapped_triples, head_or_tail=column, entity_id=i)
             # similarity of an entity to itself should be 0
             similarities[i] = 0
-            eii[i] = similarities
+            topk_similarities = similarities.topk(k=self.max_index_column_size)
+            eii[i, topk_similarities.indices] = topk_similarities.values
 
         return eii.tocsr()
 

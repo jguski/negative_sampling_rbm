@@ -459,6 +459,8 @@ def pipeline(  # noqa: C901
         training_loop_kwargs = dict(training_loop_kwargs)
         if "ESNS" in str((negative_sampler_cls).__name__):
             negative_sampler_kwargs["model"] = model_instance
+            negative_sampler_kwargs["dataset"] = dataset
+
         training_loop_kwargs.update(
             negative_sampler=negative_sampler_cls,
             negative_sampler_kwargs=negative_sampler_kwargs,

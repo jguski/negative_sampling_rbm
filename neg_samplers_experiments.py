@@ -2,25 +2,26 @@ import os
 from pipeline import pipeline
 from esns_relaxed import ESNSRelaxed
 from esns_relaxed_no_exploration import ESNSRelaxedNoExploration
+from esns_ridle import ESNSRidle
 
 experiments = [
-    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
-    {"model": "RotatE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    {"model": "RotatE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
-    {"model": "RotatE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    {"model": "RotatE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"}
+    # {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    # {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
+    # {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    # {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
+    # {"model": "RotatE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    # {"model": "RotatE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
+    # {"model": "RotatE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "absolute"}
 ]
 
 
-neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_relaxed_no_exploration": ESNSRelaxedNoExploration}
+neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_relaxed_no_exploration": ESNSRelaxedNoExploration, "esns_ridle": ESNSRidle}
 
 index_column_size=1000
 index_path_base = "EII"
-#sampling_size=100
-#q_set_size=50
+sampling_size=100
+q_set_size=50
 
 results_path_base = "results"
 checkpoint_path = "checkpoints"
@@ -40,9 +41,8 @@ for exp in experiments:
     if "esns" in exp["negative_sampler"]:
         negative_sampler_kwargs=dict(
             index_column_size=index_column_size,
-            index_path=index_path_base + "/" + exp["dataset"],
-            #sampling_size=sampling_size,
-            #q_set_size=q_set_size,
+            sampling_size=sampling_size,
+            q_set_size=q_set_size,
             similarity_metric=exp["similarity_metric"]
         )
     else:
@@ -63,6 +63,8 @@ for exp in experiments:
         # Runtime configuration
         random_seed=1235,
         device=device,
+        stopper="early",
+        stopper_kwargs=dict(frequency=5, patience=2, relative_delta=0.002)
     )
 
     save_path = results_path_base + "/" + exp_name

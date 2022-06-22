@@ -9,9 +9,9 @@ import numpy as np
 from pykeen.sampling import BernoulliNegativeSampler
 from pykeen.typing import COLUMN_HEAD, COLUMN_TAIL, COLUMN_RELATION, MappedTriples
 from pykeen.models import Model
+from pykeen.datasets import Dataset
 
 import os
-import sys
 import logging
 from tqdm import tqdm
 
@@ -42,18 +42,19 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self,
         *,
         mapped_triples: MappedTriples,
-        index_path: str = "esns_indices",
+        index_path: str = "EII",
         index_column_size: int,
         max_index_column_size: int = 1000,
         sampling_size: int,
         q_set_size: int,
         similarity_metric: str = "absolute",
         model: Model,
+        dataset: Dataset,
         **kwargs,
     ) -> None:
         super().__init__(mapped_triples=mapped_triples, **kwargs)
 
-        self.index_path = index_path
+        self.index_path = index_path + "/" + dataset
         # if self.num_entities < index_column_size, only self.num_entities can be stored
         self.index_column_size = min(self.num_entities, index_column_size)
         self.max_index_column_size = min(self.num_entities, max_index_column_size)
@@ -61,14 +62,15 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self.q_set_size = min(self.num_entities, q_set_size)
         self.similarity_function=similarity_dict[similarity_metric]
         self.model = model
+        self.dataset = dataset
         self.mapped_triples = mapped_triples.to(self.model.device)
+
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel("INFO")
 
         self._index_handling()
     
     def _index_handling(self) -> None:
-
-        logger = logging.getLogger(self.__class__.__name__)
-        logger.setLevel("INFO")
 
         # handling of npz files with inverse indices
         if not os.path.exists(self.index_path):
@@ -76,18 +78,18 @@ class ESNSRelaxed(BernoulliNegativeSampler):
 
         filename_base = self.index_path + "/" + self.__class__.__name__ + "_" + self.similarity_function.__name__
         if not (os.path.exists(filename_base + "_h.npz") and os.path.exists(filename_base + "_t.npz")):
-            logger.info("Creating EII {}_h.npz".format(filename_base))
+            self.logger.info("Creating EII {}_h.npz".format(filename_base))
             self.eii_h = self._create_eii(COLUMN_HEAD)
             scipy.sparse.save_npz(filename_base + '_h.npz', self.eii_h)
-            logger.info("Creating EII {}_t.npz".format(filename_base))
+            self.logger.info("Creating EII {}_t.npz".format(filename_base))
             self.eii_t = self._create_eii(COLUMN_TAIL)
             scipy.sparse.save_npz(filename_base + '_t.npz', self.eii_t)
             self.eii_h = self.eii_h.tolil()
             self.eii_t = self.eii_t.tolil()
         else: 
-            logger.info("Loading EII {}_h.npz".format(filename_base))
+            self.logger.info("Loading EII {}_h.npz".format(filename_base))
             self.eii_h = scipy.sparse.load_npz(filename_base + '_h.npz').tolil()
-            logger.info("Loading EII {}_t.npz".format(filename_base))
+            self.logger.info("Loading EII {}_t.npz".format(filename_base))
             self.eii_t = scipy.sparse.load_npz(filename_base + '_t.npz').tolil()
 
         # get top self.index_column_size similar entities
@@ -107,6 +109,20 @@ class ESNSRelaxed(BernoulliNegativeSampler):
                     self.eii_t.rows[ent] = list(r)
                 ent += 1
 
+    def _create_relation_matrix(self, column: int) -> torch.LongTensor:
+        """
+        Create a relation matrix as a basis for the similarity measure. This will typically
+        be a |E|x|R| matrix with 1 if relation r_j is observed for entity e_i, and 0 otherwise.
+        """
+        # create a |E|x|R| 2D tensor that is 1 where there is a relation, and 0 where there is not
+        # store all unique cominbations of (head/tail) entities with relations (to be used as indices for sparse tensor)
+        relation_indices = self.mapped_triples.index_select(dim=1, index=torch.tensor([column,1], device=self.model.device)).unique(dim=0)
+        # create the 2D tensor
+        relation_matrix = torch.zeros(self.num_entities, self.num_relations, device=self.model.device)
+        relation_matrix[relation_indices[:,0], relation_indices[:,1]] = 1
+
+        return relation_matrix
+
     def _create_eii(self, column: int) -> None:
         """
         Create inverted indices (EII) containing a defined number of most similar entities e_j for each entity e_i.
@@ -118,13 +134,9 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         # corresponding to index of the entity (row 0), indices (row 1) and similarity values (row 2) of top self.index_column_size entities
         #eii = torch.zeros(3, self.index_column_size, self.num_entities, device=self.model.device)
         eii = sparse.csr_matrix((self.num_entities, self.num_entities)).tolil()
-        # create a |E|x|R| 2D tensor that is 1 where there is a relation, and 0 where there is not
-        # store all unique cominbations of (head/tail) entities with relations (to be used as indices for sparse tensor)
-        relation_indices = self.mapped_triples.index_select(dim=1, index=torch.tensor([column,1], device=self.model.device)).unique(dim=0)
-        # create the 2D tensor
-        relation_matrix = torch.zeros(self.num_entities, self.num_relations, device=self.model.device)
-        relation_matrix[relation_indices[:,0], relation_indices[:,1]] = 1
 
+        relation_matrix = self._create_relation_matrix(column)
+        
         # fill the EII tensor for each e_i
         for i in tqdm(range(self.num_entities)):
             # compute similarity values of all e_j with e_i

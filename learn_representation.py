@@ -22,8 +22,6 @@ for head_or_tail in [COLUMN_HEAD, COLUMN_TAIL]:
         print('Learning Ridle Representations on {} (head)'.format(parser.dataset))
     else:
         print('Learning Ridle Representations on {} (tail)'.format(parser.dataset))
-    # Loading Files
-    #df = pd.read_pickle('./dataset/{}/dataset.pkl'.format(parser.dataset))[['S', 'P']].drop_duplicates()
 
     dataset_instance: Dataset = get_dataset(
             dataset=parser.dataset
@@ -53,6 +51,6 @@ for head_or_tail in [COLUMN_HEAD, COLUMN_TAIL]:
     Path('./RBM_embeddings/{}'.format(parser.dataset)).mkdir(parents=True, exist_ok=True)
     
     if head_or_tail == COLUMN_HEAD:
-        np.savez('./RBM_embeddings/{}/reconstructed_head.npz'.format(parser.dataset), r)
+        np.savez('./RBM_embeddings/{}/reconstructed_h.npz'.format(parser.dataset), r)
     else:
-        np.savez('./RBM_embeddings/{}/reconstructed_tail.npz'.format(parser.dataset), r)
+        np.savez('./RBM_embeddings/{}/reconstructed_t.npz'.format(parser.dataset), r)

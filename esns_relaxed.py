@@ -14,6 +14,7 @@ from pykeen.datasets import Dataset
 import os
 import logging
 from tqdm import tqdm
+from pathlib import Path
 
 
 def absolute_similarity(relation_matrix: torch.LongTensor, entity_id: int, head_or_tail: int, mapped_triples: torch.LongTensor):
@@ -48,8 +49,12 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         sampling_size: int,
         q_set_size: int,
         similarity_metric: str = "absolute",
+        n_triples_for_ns_qual_analysis = 1,
+        ns_qual_analysis_every = 100,
+        ns_qual_analysis_path = "NS_quality_analysis",
         model: Model,
         dataset: Dataset,
+        logging_level: str = "INFO",
         **kwargs,
     ) -> None:
         super().__init__(mapped_triples=mapped_triples, **kwargs)
@@ -61,12 +66,17 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self.sampling_size = sampling_size
         self.q_set_size = min(self.num_entities, q_set_size)
         self.similarity_function=similarity_dict[similarity_metric]
+        # for NS quality analysis: Init empty list to be filled with random triple ids later
+        self.random_triples_ids = [None] * n_triples_for_ns_qual_analysis
+        self.ns_qual_analysis_every = ns_qual_analysis_every
+        self.ns_qual_analysis_path = ns_qual_analysis_path
+        # some objects to be passed to the sampler
         self.model = model
         self.dataset = dataset
         self.mapped_triples = mapped_triples.to(self.model.device)
 
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel("INFO")
+        self.logger.setLevel(logging_level)
 
         self._index_handling()
     
@@ -261,7 +271,6 @@ class ESNSRelaxed(BernoulliNegativeSampler):
             # Tails are corrupted if heads are not corrupted
             (COLUMN_TAIL, ~head_mask),
         ):  
-            #self._esns_replacement(
             self._esns_replacement(
                 batch=negative_batch,
                 index=index,
@@ -271,3 +280,39 @@ class ESNSRelaxed(BernoulliNegativeSampler):
             )
 
         return negative_batch.view(*batch_shape, self.num_negs_per_pos, 3).to(positive_batch.device)
+
+
+    def quality_analysis(self, epoch, column=COLUMN_TAIL):
+
+        if (self.ns_qual_analysis_every) != 0 and (epoch % self.ns_qual_analysis_every == 0):
+            self.logger.info("Negative sampling quality analysis after epoch {}".format(epoch))
+
+            if not any(self.random_triples_ids):
+                self.random_triples_ids = np.random.choice(self.mapped_triples.size()[0], len(self.random_triples_ids))
+
+            relation_matrix = self._create_relation_matrix(column)
+            for i in self.random_triples_ids:
+                entity_to_replace = self.mapped_triples[i,column]
+                # compute similarity values of all e_j with e_i
+                similarities = self.similarity_function(relation_matrix=relation_matrix, mapped_triples=self.mapped_triples, head_or_tail=column, entity_id=entity_to_replace)
+                # similarity of an entity to itself should be -1 (so it won't be selected)
+                similarities[entity_to_replace] = -1
+                # find entities with similarity values > 0 (similar neg. samples) or = 0 (non-similar neg. samples)
+                sns_entities = np.where(similarities > 0)[0]
+                nns_entities = np.where(similarities==0)[0]
+                # create tensors corresponding to sns and nns
+                sns = self.mapped_triples[i].repeat(len(sns_entities),1)
+                sns[:,-1] = torch.Tensor(sns_entities, device=self.model.device)
+                nns = self.mapped_triples[i].repeat(len(nns_entities),1)
+                nns[:,-1] = torch.Tensor(nns_entities, device=self.model.device)
+                original_triple_score = self.model.score_hrt(self.mapped_triples[None,i]).detach()
+                minus_distance_sns = (self.model.score_hrt(sns) - original_triple_score).cpu().detach().numpy()
+                minus_distance_nns = (self.model.score_hrt(nns) - original_triple_score).cpu().detach().numpy()
+
+                save_path = self.ns_qual_analysis_path + '/{}/{}'.format(self.dataset, self.__class__.__name__ + "_" + self.similarity_function.__name__)
+                Path(save_path).mkdir(parents=True, exist_ok=True)
+                np.savez(save_path + "/sns_triple_{}_after_epoch_{}.npz".format(i, epoch), minus_distance_sns)
+                np.savez(save_path + "/nns_triple_{}_after_epoch_{}.npz".format(i, epoch), minus_distance_nns)
+
+                
+

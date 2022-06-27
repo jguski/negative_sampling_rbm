@@ -38,7 +38,7 @@ class ESNSRidle(ESNSRelaxed):
         else:
             
             self.logger.info("Learning Ridle representation for {} ({})".format(self.dataset, head_or_tail))
-            df = pd.DataFrame(data=self.mapped_triples.numpy()[:,[column,COLUMN_RELATION]],
+            df = pd.DataFrame(data=self.mapped_triples.cpu().numpy()[:,[column,COLUMN_RELATION]],
                 columns=['entity', 'relation'])
 
             # add a mock label that is removed later, so that each entity will get a row

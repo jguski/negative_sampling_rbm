@@ -114,7 +114,7 @@ class ESNSRelaxedNoExploration(BernoulliNegativeSampler):
         # create tensor with one row per triple in selection, containing row from eii corresponding to head or tail value
         #similar_entities = index_select_sparse(eii, 0, batch[selection,index]).to_dense()
         entities_to_corrupt = batch[selection,index]
-        replacement = torch.tensor([eii[i.item()][torch.randint(high=eii[i.item()].size()[0], size=(1,)).item()] for i in entities_to_corrupt])
+        replacement = torch.tensor([eii[i.item()][torch.randint(high=eii[i.item()].size()[0], size=(1,)).item()] for i in entities_to_corrupt], device=self.model.device)
        
         batch[selection, index] = replacement
 

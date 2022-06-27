@@ -63,4 +63,4 @@ class ESNSRidle(ESNSRelaxed):
             np.savez(self.embeddings_path + '/{}/reconstructed{}.npz'.format(self.dataset, head_or_tail), relation_matrix)
 
 
-        return(torch.Tensor(relation_matrix, device=self.model.device))
+        return(torch.from_numpy(relation_matrix).to(self.model.device))

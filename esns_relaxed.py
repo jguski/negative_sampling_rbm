@@ -154,7 +154,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
             # similarity of an entity to itself should be 0
             similarities[i] = 0
             topk_similarities = similarities.topk(k=self.max_index_column_size)
-            eii[i, topk_similarities.indices] = topk_similarities.values
+            eii[i, topk_similarities.indices.cpu()] = topk_similarities.values.cpu()
 
         return eii.tocsr()
 
@@ -203,9 +203,9 @@ class ESNSRelaxed(BernoulliNegativeSampler):
             h_cand = torch.from_numpy(h_rep).type(torch.LongTensor).to(self.model.device)
             n = head.size(0)
             
-            tail = tail.unsqueeze(1).expand_as(h_cand).flatten()
-            rela = rela.unsqueeze(1).expand_as(h_cand).flatten()
-
+            tail = tail.unsqueeze(1).expand_as(h_cand).flatten().to(self.model.device)
+            rela = rela.unsqueeze(1).expand_as(h_cand).flatten().to(self.model.device)
+            
             candidate_triples = torch.stack((h_cand.flatten(), rela, tail)).t()
             scores = self.model.score_hrt(candidate_triples)
             scores = scores.view(n, -1)
@@ -262,7 +262,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         ) < head_corruption_probability.to(device=self.model.device)
         
         # clone positive batch for corruption (.repeat_interleave creates a copy)
-        negative_batch = positive_batch.view(-1, 3).repeat_interleave(self.num_negs_per_pos, dim=0)
+        negative_batch = positive_batch.view(-1, 3).repeat_interleave(self.num_negs_per_pos, dim=0).to(self.model.device)
         # flatten mask
         head_mask = head_mask.view(-1)
         

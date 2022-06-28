@@ -306,13 +306,15 @@ class ESNSRelaxed(BernoulliNegativeSampler):
                 nns = self.mapped_triples[i].repeat(len(nns_entities),1)
                 nns[:,-1] = torch.Tensor(nns_entities, device=self.model.device)
                 original_triple_score = self.model.score_hrt(self.mapped_triples[None,i]).detach()
-                minus_distance_sns = (self.model.score_hrt(sns) - original_triple_score).cpu().detach().numpy()
-                minus_distance_nns = (self.model.score_hrt(nns) - original_triple_score).cpu().detach().numpy()
+
+                minus_distances = {}
+                minus_distances["sns"] = [i[0] for i in (self.model.score_hrt(sns) - original_triple_score).cpu().detach().numpy()]
+                
+                minus_distances["nns"] = [i[0] for i in (self.model.score_hrt(nns) - original_triple_score).cpu().detach().numpy()]
 
                 save_path = self.ns_qual_analysis_path + '/{}/{}'.format(self.dataset, self.__class__.__name__ + "_" + self.similarity_function.__name__)
                 Path(save_path).mkdir(parents=True, exist_ok=True)
-                np.savez(save_path + "/sns_triple_{}_after_epoch_{}.npz".format(i, epoch), minus_distance_sns)
-                np.savez(save_path + "/nns_triple_{}_after_epoch_{}.npz".format(i, epoch), minus_distance_nns)
+                np.savez(save_path + "/triple_{}_after_epoch_{}.npz".format(i, epoch), **minus_distances)
 
                 
 

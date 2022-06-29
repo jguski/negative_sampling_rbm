@@ -1,6 +1,3 @@
 **/__pycache__/
-EII/
-results/
-checkpoints/
-RBM_embeddings/
-NS_quality_analysis/
+Output/
+test_new_NS.ipynb

@@ -6,7 +6,7 @@ import torch
 from pykeen.sampling import BernoulliNegativeSampler
 from pykeen.typing import COLUMN_HEAD, COLUMN_TAIL, MappedTriples
 from pykeen.models import Model
-from esns_relaxed import absolute_similarity, jaccard_similarity, similarity_dict
+from negative_samplers.esns_relaxed import absolute_similarity, jaccard_similarity, similarity_dict
 
 import os
 import pickle

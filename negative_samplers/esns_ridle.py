@@ -10,13 +10,13 @@ import os
 
 from pykeen.typing import COLUMN_HEAD, COLUMN_RELATION
 
-from esns_relaxed import ESNSRelaxed
-from RBM import RBM
+from negative_samplers.esns_relaxed import ESNSRelaxed
+from negative_samplers.ridle.RBM import RBM
 
 class ESNSRidle(ESNSRelaxed):
     def __init__(
         self,
-        embeddings_path: str = "RBM_embeddings",
+        embeddings_path: str = "Output/RBM_embeddings",
         **kwargs,
     ) -> None:
         self.embeddings_path = embeddings_path
@@ -24,10 +24,10 @@ class ESNSRidle(ESNSRelaxed):
         
     
     def _create_relation_matrix(self, column: int) -> torch.LongTensor:
-        # """
-        # Provides relation matrix as a basis for the similarity measure. It is not computed here,
-        # but loaded from existing npz files with Ridle embeddings.
-        # """
+        """
+        Provides relation matrix as a basis for the similarity measure. Either a Ridle representation
+        is learned by fitting an RBM, or an existing one is read from a corresponding file.
+        """
         head_or_tail = ("_h" if column == COLUMN_HEAD else "_t")
 
         if os.path.exists(self.embeddings_path + '/{}/reconstructed{}.npz'.format(self.dataset, head_or_tail)):

@@ -43,7 +43,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self,
         *,
         mapped_triples: MappedTriples,
-        index_path: str = "EII",
+        index_path: str = "Output/EII",
         index_column_size: int,
         max_index_column_size: int = 1000,
         sampling_size: int,
@@ -51,7 +51,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         similarity_metric: str = "absolute",
         n_triples_for_ns_qual_analysis = 1,
         ns_qual_analysis_every = 100,
-        ns_qual_analysis_path = "NS_quality_analysis",
+        ns_qual_analysis_path = "Output/NS_quality_analysis",
         model: Model,
         dataset: Dataset,
         logging_level: str = "INFO",
@@ -75,9 +75,9 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self.dataset = dataset
         self.mapped_triples = mapped_triples.to(self.model.device)
 
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logging.getLogger(self.__class__.__name__ + "_" + str(id(self)))
         self.logger.setLevel(logging_level)
-
+        
         self._index_handling()
     
     def _index_handling(self) -> None:

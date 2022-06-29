@@ -1,18 +1,19 @@
 import os
-from pipeline import pipeline
-from esns_relaxed import ESNSRelaxed
-from esns_relaxed_no_exploration import ESNSRelaxedNoExploration
-from esns_ridle import ESNSRidle
+from modified_pykeen.pipeline_modified import pipeline
+from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopModified
+from negative_samplers.esns_relaxed import ESNSRelaxed
+from negative_samplers.esns_relaxed_no_exploration import ESNSRelaxedNoExploration
+from negative_samplers.esns_ridle import ESNSRidle
 
 experiments = [
-    # {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    # {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
-    # {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    # {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
-    # {"model": "RotatE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    # {"model": "RotatE", "dataset": "WN18", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "jaccard"},
-    # {"model": "RotatE", "dataset": "FB15k", "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "absolute"}
+    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_ridle", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "absolute"},
+    # {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed", "similarity_metric": "jaccard"},
+    # {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "jaccard"},
+    # {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_ridle", "similarity_metric": "jaccard"},
+    # {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "jaccard"},
 ]
 
 
@@ -22,9 +23,12 @@ index_column_size=1000
 index_path_base = "EII"
 sampling_size=100
 q_set_size=50
+n_triples_for_ns_qual_analysis=5
+ns_qual_analysis_every=20
 
-results_path_base = "results"
-checkpoint_path = "checkpoints"
+
+results_path_base = "Output/Results"
+checkpoint_path = "Output/Checkpoints"
 num_epochs=100
 device="gpu"
 
@@ -43,10 +47,15 @@ for exp in experiments:
             index_column_size=index_column_size,
             sampling_size=sampling_size,
             q_set_size=q_set_size,
-            similarity_metric=exp["similarity_metric"]
+            similarity_metric=exp["similarity_metric"],
+            n_triples_for_ns_qual_analysis=n_triples_for_ns_qual_analysis,
+            ns_qual_analysis_every=ns_qual_analysis_every,
+            logging_level="INFO"
         )
+        training_loop=SLCWATrainingLoopModified
     else:
         negative_sampler_kwargs=dict()
+        training_loop = SLCWATrainingLoop
     
 
     results= pipeline(
@@ -61,6 +70,7 @@ for exp in experiments:
             checkpoint_name=os.getcwd()+ '/' + checkpoint_path + '/' + exp_name +'.pt',
         ),  
         # Runtime configuration
+        training_loop=training_loop,
         random_seed=1235,
         device=device,
         stopper="early",

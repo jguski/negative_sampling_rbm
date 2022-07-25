@@ -288,11 +288,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
                 elif self.similarity_function.__name__  == "cosine_similarity":
                     sns_entities = np.where(similarities.cpu() > 0.5)[0]
                     nns_entities = np.where(similarities.cpu()<=0.5)[0]
-
-                print(sns_entities)
-                print(nns_entities)
-                import sys
-                sys.exit()
+                    
                 # create tensors corresponding to sns and nns
                 sns = self.mapped_triples[i].repeat(len(sns_entities),1)
                 sns[:,-1] = torch.Tensor(sns_entities)

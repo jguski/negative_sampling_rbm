@@ -2,20 +2,19 @@ import os
 from modified_pykeen.pipeline_modified import pipeline
 from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopModified
 from negative_samplers.esns_relaxed import ESNSRelaxed
-from negative_samplers.esns_relaxed_no_exploration import ESNSRelaxedNoExploration
 from negative_samplers.esns_ridle import ESNSRidle
 
 experiments = [
     #{"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "jacccard"},
     {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "cosine"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "jacccard"},
     #{"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "jacccard"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "cosine"},
+    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_ridle", "similarity_metric": "cosine"},
+    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed", "similarity_metric": "jacccard"},
 ]
 
 
-neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_relaxed_no_exploration": ESNSRelaxedNoExploration, "esns_ridle": ESNSRidle}
+neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle}
 
 index_column_size=1000
 index_path_base = "EII"
@@ -31,7 +30,7 @@ num_epochs=100
 device="gpu"
 
 if not os.path.isdir(checkpoint_path):
-    os.mkdir(checkpoint_path)
+    os.makedirs(checkpoint_path)
 
 
 for exp in experiments:

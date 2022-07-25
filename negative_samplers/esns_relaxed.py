@@ -281,8 +281,8 @@ class ESNSRelaxed(BernoulliNegativeSampler):
                 # similarity of an entity to itself should be -1 (so it won't be selected)
                 similarities[entity_to_replace] = -1
                 # find entities with similarity values > 0 (similar neg. samples) or = 0 (non-similar neg. samples)
-                sns_entities = np.where(similarities > 0)[0]
-                nns_entities = np.where(similarities==0)[0]
+                sns_entities = np.where(similarities.cpu() > 0)[0]
+                nns_entities = np.where(similarities.cpu()==0)[0]
                 # create tensors corresponding to sns and nns
                 sns = self.mapped_triples[i].repeat(len(sns_entities),1)
                 sns[:,-1] = torch.Tensor(sns_entities, device=self.model.device)

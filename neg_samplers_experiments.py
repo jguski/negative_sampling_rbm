@@ -6,14 +6,12 @@ from negative_samplers.esns_relaxed_no_exploration import ESNSRelaxedNoExplorati
 from negative_samplers.esns_ridle import ESNSRidle
 
 experiments = [
-    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_ridle", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "absolute"},
-    # {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_relaxed", "similarity_metric": "jaccard"},
-    # {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "jaccard"},
-    # {"model": "TransE", "dataset": "WN18", "negative_sampler": "esns_ridle", "similarity_metric": "jaccard"},
-    # {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "jaccard"},
+    #{"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "jacccard"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "cosine"},
+    #{"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_relaxed", "similarity_metric": "jacccard"},
+    {"model": "TransE", "dataset": "FB15k", "negative_sampler": "esns_ridle", "similarity_metric": "cosine"},
 ]
 
 

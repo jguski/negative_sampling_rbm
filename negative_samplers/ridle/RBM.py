@@ -347,8 +347,9 @@ class RBM():
         hidden_states = self._sample(positive_hidden)
         negative_visible = self.sigmoid(hidden_states.dot(self.W.T) + self.v0)
         reconstructed_X = self._sample(negative_visible)
-        return reconstructed_X
-     
+
+        return reconstructed_X.astype(np.uint8)
+
     def compress(self, X):
         positive_hidden = self.sigmoid(X.dot(self.W) + self.h0)
         hidden_states = self._sample(positive_hidden)

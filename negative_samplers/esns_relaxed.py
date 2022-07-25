@@ -5,37 +5,17 @@ import torch
 import scipy
 from scipy import sparse
 import numpy as np
-
-from pykeen.sampling import BernoulliNegativeSampler
-from pykeen.typing import COLUMN_HEAD, COLUMN_TAIL, COLUMN_RELATION, MappedTriples
-from pykeen.models import Model
-from pykeen.datasets import Dataset
-
 import os
 import logging
 from tqdm import tqdm
 from pathlib import Path
 
+from .similarity_metrics import similarity_factory
 
-def absolute_similarity(relation_matrix: torch.LongTensor, entity_id: int, head_or_tail: int, mapped_triples: torch.LongTensor):
-    # store relations that are observed together with e_i
-    relations = torch.unique(mapped_triples[(mapped_triples[:,head_or_tail]==entity_id), 1])
-    # slice adjacency tensor, keeping only those columns corresponding to relations observed with e_i
-    sliced_relation_matrix = relation_matrix.index_select(dim=1, index=relations)
-    # sum over all rows (to get number of relations shared with e_i for each e_j)
-    return sliced_relation_matrix.sum(dim=1)
-
-def jaccard_similarity(relation_matrix: torch.LongTensor, entity_id: int, head_or_tail: int, mapped_triples: torch.LongTensor):
-    vector_e_i = relation_matrix[entity_id,]
-    # calculate intersection = adjacency matrix * vector_e_i
-    intersection = torch.matmul(relation_matrix, vector_e_i.t())
-    # calculate union = rowwise_sum(acjacency matrix + vector_e_i) - intersection
-    union = torch.add(vector_e_i, relation_matrix).sum(dim=1).subtract(intersection)
-    # now compute similarities (in terms of Jaccard distance): Intersection over Union
-    return torch.div(intersection, union)
-
-similarity_dict={"absolute": absolute_similarity, "jaccard": jaccard_similarity}
-
+from pykeen.sampling import BernoulliNegativeSampler
+from pykeen.typing import COLUMN_HEAD, COLUMN_TAIL, COLUMN_RELATION, MappedTriples
+from pykeen.models import Model
+from pykeen.datasets import Dataset
 
 class ESNSRelaxed(BernoulliNegativeSampler):
 
@@ -65,7 +45,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self.max_index_column_size = min(self.num_entities, max_index_column_size)
         self.sampling_size = sampling_size
         self.q_set_size = min(self.num_entities, q_set_size)
-        self.similarity_function=similarity_dict[similarity_metric]
+        self.similarity_function=similarity_factory(similarity_metric)
         # for NS quality analysis: Init empty list to be filled with random triple ids later
         self.random_triples_ids = [None] * n_triples_for_ns_qual_analysis
         self.ns_qual_analysis_every = ns_qual_analysis_every
@@ -86,7 +66,10 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         if not os.path.exists(self.index_path):
             os.makedirs(self.index_path)
 
-        filename_base = self.index_path + "/" + self.__class__.__name__ + "_" + self.similarity_function.__name__
+        if hasattr(self, "rbm_layer"):
+            filename_base = self.index_path + "/" + self.__class__.__name__ + "_" + self.similarity_function.__name__ + "_" + self.rbm_layer
+        else:
+            filename_base = self.index_path + "/" + self.__class__.__name__ + "_" + self.similarity_function.__name__
         if not (os.path.exists(filename_base + "_h.npz") and os.path.exists(filename_base + "_t.npz")):
             self.logger.info("Creating EII {}_h.npz".format(filename_base))
             self.eii_h = self._create_eii(COLUMN_HEAD)
@@ -128,7 +111,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         # store all unique cominbations of (head/tail) entities with relations (to be used as indices for sparse tensor)
         relation_indices = self.mapped_triples.index_select(dim=1, index=torch.tensor([column,1], device=self.model.device)).unique(dim=0)
         # create the 2D tensor
-        relation_matrix = torch.zeros(self.num_entities, self.num_relations, device=self.model.device)
+        relation_matrix = torch.zeros(self.num_entities, self.num_relations, device=self.model.device, dtype=torch.uint8)
         relation_matrix[relation_indices[:,0], relation_indices[:,1]] = 1
 
         return relation_matrix

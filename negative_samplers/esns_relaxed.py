@@ -111,7 +111,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         # store all unique cominbations of (head/tail) entities with relations (to be used as indices for sparse tensor)
         relation_indices = self.mapped_triples.index_select(dim=1, index=torch.tensor([column,1], device=self.model.device)).unique(dim=0)
         # create the 2D tensor
-        relation_matrix = torch.zeros(self.num_entities, self.num_relations, device=self.model.device, dtype=torch.uint8)
+        relation_matrix = torch.zeros(self.num_entities, self.num_relations, device=self.model.device)
         relation_matrix[relation_indices[:,0], relation_indices[:,1]] = 1
 
         return relation_matrix
@@ -280,14 +280,24 @@ class ESNSRelaxed(BernoulliNegativeSampler):
                 similarities = self.similarity_function(relation_matrix=relation_matrix, mapped_triples=self.mapped_triples, head_or_tail=column, entity_id=entity_to_replace)
                 # similarity of an entity to itself should be -1 (so it won't be selected)
                 similarities[entity_to_replace] = -1
-                # find entities with similarity values > 0 (similar neg. samples) or = 0 (non-similar neg. samples)
-                sns_entities = np.where(similarities.cpu() > 0)[0]
-                nns_entities = np.where(similarities.cpu()==0)[0]
+
+                if self.similarity_function.__name__ == "absolute_similarity" or self.similarity_function.__name__ == "jaccard_similarity":
+                    # find entities with similarity values > 0 (similar neg. samples) or = 0 (non-similar neg. samples)
+                    sns_entities = np.where(similarities.cpu() > 0)[0]
+                    nns_entities = np.where(similarities.cpu()<=0)[0]
+                elif self.similarity_function.__name__  == "cosine_similarity":
+                    sns_entities = np.where(similarities.cpu() > 0.5)[0]
+                    nns_entities = np.where(similarities.cpu()<=0.5)[0]
+
+                print(sns_entities)
+                print(nns_entities)
+                import sys
+                sys.exit()
                 # create tensors corresponding to sns and nns
                 sns = self.mapped_triples[i].repeat(len(sns_entities),1)
-                sns[:,-1] = torch.Tensor(sns_entities, device=self.model.device)
+                sns[:,-1] = torch.Tensor(sns_entities)
                 nns = self.mapped_triples[i].repeat(len(nns_entities),1)
-                nns[:,-1] = torch.Tensor(nns_entities, device=self.model.device)
+                nns[:,-1] = torch.Tensor(nns_entities)
                 original_triple_score = self.model.score_hrt(self.mapped_triples[None,i]).detach()
 
                 minus_distances = {}

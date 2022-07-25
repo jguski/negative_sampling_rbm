@@ -12,7 +12,7 @@ def similarity_factory(similarity_metric):
 
 
 def absolute_similarity(relation_matrix: torch.ByteTensor, entity_id: int, head_or_tail: int, mapped_triples: torch.LongTensor):
-    assert relation_matrix.dtype is torch.uint8, "Cosine similarity can only be computed for torch.uint8, got {}.".format(relation_matrix.dtype)
+    #assert relation_matrix.dtype is torch.uint8, "Cosine similarity can only be computed for torch.uint8, got {}.".format(relation_matrix.dtype)
     # store relations that are observed together with e_i
     relations = torch.unique(mapped_triples[(mapped_triples[:,head_or_tail]==entity_id), 1])
     # slice adjacency tensor, keeping only those columns corresponding to relations observed with e_i
@@ -22,7 +22,8 @@ def absolute_similarity(relation_matrix: torch.ByteTensor, entity_id: int, head_
 
 
 def jaccard_similarity(relation_matrix: torch.ByteTensor, entity_id: int, head_or_tail: int, mapped_triples: torch.LongTensor):
-    assert relation_matrix.dtype is torch.uint8, "Cosine similarity can only be computed for torch.uint8, got {}.".format(relation_matrix.dtype)
+    # matmul seeems to only work with float
+    #assert relation_matrix.dtype is torch.uint8, "Cosine similarity can only be computed for torch.uint8, got {}.".format(relation_matrix.dtype)
     vector_e_i = relation_matrix[entity_id,]
     # calculate intersection = adjacency matrix * vector_e_i
     intersection = torch.matmul(relation_matrix, vector_e_i.t())

@@ -10,7 +10,7 @@ import logging
 from tqdm import tqdm
 from pathlib import Path
 
-from .similarity_metrics import similarity_factory
+from .similarity_metrics import SimilarityFactory, BinarySimilarityFunction, RealSimilarityFunction
 
 from pykeen.sampling import BernoulliNegativeSampler
 from pykeen.typing import COLUMN_HEAD, COLUMN_TAIL, COLUMN_RELATION, MappedTriples
@@ -25,7 +25,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         mapped_triples: MappedTriples,
         index_path: str = "Output/EII",
         index_column_size: int,
-        max_index_column_size: int = 1000,
+        max_index_column_size: int = 100,
         sampling_size: int,
         q_set_size: int,
         similarity_metric: str = "absolute",
@@ -45,7 +45,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         self.max_index_column_size = min(self.num_entities, max_index_column_size)
         self.sampling_size = sampling_size
         self.q_set_size = min(self.num_entities, q_set_size)
-        self.similarity_function=similarity_factory(similarity_metric)
+        self.similarity_function=SimilarityFactory.get(similarity_metric)
         # for NS quality analysis: Init empty list to be filled with random triple ids later
         self.random_triples_ids = [None] * n_triples_for_ns_qual_analysis
         self.ns_qual_analysis_every = ns_qual_analysis_every
@@ -133,7 +133,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         # fill the EII tensor for each e_i
         for i in tqdm(range(self.num_entities)):
             # compute similarity values of all e_j with e_i
-            similarities = self.similarity_function(relation_matrix=relation_matrix, mapped_triples=self.mapped_triples, head_or_tail=column, entity_id=i)
+            similarities = self.similarity_function.compute(relation_matrix=relation_matrix, mapped_triples=self.mapped_triples, head_or_tail=column, entity_id=i)
             # similarity of an entity to itself should be 0
             similarities[i] = 0
             topk_similarities = similarities.topk(k=self.max_index_column_size)
@@ -277,15 +277,15 @@ class ESNSRelaxed(BernoulliNegativeSampler):
             for i in self.random_triples_ids:
                 entity_to_replace = self.mapped_triples[i,column]
                 # compute similarity values of all e_j with e_i
-                similarities = self.similarity_function(relation_matrix=relation_matrix, mapped_triples=self.mapped_triples, head_or_tail=column, entity_id=entity_to_replace)
+                similarities = self.similarity_function.compute(relation_matrix=relation_matrix, mapped_triples=self.mapped_triples, head_or_tail=column, entity_id=entity_to_replace)
                 # similarity of an entity to itself should be -1 (so it won't be selected)
                 similarities[entity_to_replace] = -1
 
-                if self.similarity_function.__name__ == "absolute_similarity" or self.similarity_function.__name__ == "jaccard_similarity":
+                if issubclass(self.similarity_function, BinarySimilarityFunction):
                     # find entities with similarity values > 0 (similar neg. samples) or = 0 (non-similar neg. samples)
                     sns_entities = np.where(similarities.cpu() > 0)[0]
                     nns_entities = np.where(similarities.cpu()<=0)[0]
-                elif self.similarity_function.__name__  == "cosine_similarity":
+                elif issubclass(self.similarity_function, RealSimilarityFunction):
                     sns_entities = np.where(similarities.cpu() > 0.5)[0]
                     nns_entities = np.where(similarities.cpu()<=0.5)[0]
                     

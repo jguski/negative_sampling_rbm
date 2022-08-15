@@ -64,9 +64,8 @@ class ESNSRidle(ESNSRelaxed):
             rbm_representation["compressed"] = rbm.compress(X)
             rbm_representation["reconstructed"] = rbm.reconstruct(X)
             #reconstruct_and_sample = 1*rbm.reconstruct_and_sample(X)
-            
             Path(self.embeddings_path + '/{}'.format(self.dataset)).mkdir(parents=True, exist_ok=True)
             np.savez(self.embeddings_path + '/{}/rbm_representation{}.npz'.format(self.dataset, head_or_tail), **rbm_representation)
 
 
-        return(torch.from_numpy(rbm_representation[self.rbm_layer]).to(self.model.device))
+        return(torch.from_numpy(rbm_representation[self.rbm_layer]).to(self.model.device).float())

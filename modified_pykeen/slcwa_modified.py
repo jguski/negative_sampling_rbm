@@ -41,3 +41,5 @@ class SLCWATrainingLoopModified(SLCWATrainingLoop):
         
         # call _train() from super class with updated kwargs
         return super()._train(*args, **kwargs)
+
+

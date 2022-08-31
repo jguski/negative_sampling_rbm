@@ -457,9 +457,11 @@ def pipeline(  # noqa: C901
     else:
         negative_sampler_cls = negative_sampler_resolver.lookup(negative_sampler)
         training_loop_kwargs = dict(training_loop_kwargs)
+        # TODO: add generic class ESNS and check issubclass(negative_sampler_cls, ESNS)
         if "ESNS" in str((negative_sampler_cls).__name__):
             negative_sampler_kwargs["model"] = model_instance
-            negative_sampler_kwargs["dataset"] = dataset
+            if dataset:
+                negative_sampler_kwargs["dataset"] = dataset
 
         training_loop_kwargs.update(
             negative_sampler=negative_sampler_cls,

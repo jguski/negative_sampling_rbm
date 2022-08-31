@@ -29,7 +29,7 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         sampling_size: int,
         q_set_size: int,
         similarity_metric: str = "absolute",
-        n_triples_for_ns_qual_analysis = 1,
+        n_triples_for_ns_qual_analysis = 0,
         ns_qual_analysis_every = 100,
         ns_qual_analysis_path = "Output/NS_quality_analysis",
         model: Model,
@@ -38,7 +38,6 @@ class ESNSRelaxed(BernoulliNegativeSampler):
         **kwargs,
     ) -> None:
         super().__init__(mapped_triples=mapped_triples, **kwargs)
-
         self.index_path = index_path + "/" + dataset
         # if self.num_entities < index_column_size, only self.num_entities can be stored
         self.index_column_size = min(self.num_entities, index_column_size)

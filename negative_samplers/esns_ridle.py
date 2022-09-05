@@ -67,5 +67,4 @@ class ESNSRidle(ESNSRelaxed):
             Path(self.embeddings_path + '/{}'.format(self.dataset)).mkdir(parents=True, exist_ok=True)
             np.savez(self.embeddings_path + '/{}/rbm_representation{}.npz'.format(self.dataset, head_or_tail), **rbm_representation)
 
-
         return(torch.from_numpy(rbm_representation[self.rbm_layer]).to(self.model.device).float())

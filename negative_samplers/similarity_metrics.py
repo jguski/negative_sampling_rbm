@@ -2,6 +2,7 @@ from abc import abstractmethod
 import torch
 
 
+
 class SimilarityFunction():
     @staticmethod
     @abstractmethod
@@ -17,7 +18,7 @@ class BinarySimilarityFunction(SimilarityFunction):
     def typecheck(similarity_function, relation_matrix: torch.Tensor):
         # assert that the relation_matrix is binary
         unique_values = relation_matrix.unique()
-        assert torch.equal(unique_values, torch.Tensor([0,1])), "{} can only be computed for binary values, got matrix with values {} ...".format(similarity_function.__name__, unique_values.cpu().detach().numpy()[0:10])
+        assert torch.equal(unique_values.to("cpu"), torch.Tensor([0,1])), "{} can only be computed for binary values, got matrix with values {} ...".format(similarity_function.__name__, unique_values.cpu().detach().numpy()[0:10])
 
 class RealSimilarityFunction(SimilarityFunction):
     def typecheck(similarity_function, relation_matrix: torch.Tensor):

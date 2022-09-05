@@ -1,6 +1,8 @@
 import os
+from syslog import LOG_SYSLOG
 from modified_pykeen.hpo_modified import hpo_pipeline
 from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopModified
+from negative_samplers.esns_standard import ESNSStandard
 from negative_samplers.esns_relaxed import ESNSRelaxed
 from negative_samplers.esns_ridle import ESNSRidle
 from losses.custom_losses import ShiftLogLoss
@@ -8,17 +10,19 @@ from pykeen.datasets import get_dataset
 
 experiments = [
     {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
     {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
     {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "basic"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
 ]
 
 
-neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle}
+neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle, "esns_standard": ESNSStandard}
 
 index_column_size=100
 index_path_base = "EII"
@@ -29,8 +33,8 @@ n_triples_for_ns_qual_analysis=0
 ns_qual_analysis_every=0
 
 results_path_base = "Output/hpo"
-num_epochs=100
-n_trials=10
+num_epochs=1000
+n_trials=20
 device="gpu"
 
 embedding_dim_range = dict(type='categorical', choices=[50,100,200])
@@ -64,7 +68,7 @@ for exp in experiments:
             negative_sampler_kwargs["rbm_layer"] = exp["rbm_layer"]
         training_loop=SLCWATrainingLoopModified
     else:
-        negative_sampler_kwargs=dict()
+        negative_sampler_kwargs=dict(num_negs_per_pos=1)
         training_loop = SLCWATrainingLoop
 
     # load dataset beforehand so that validation set can be used for evaluation instead of testing set
@@ -92,10 +96,10 @@ for exp in experiments:
         training_kwargs_ranges=dict(
             batch_size=batch_size_range
         ),
-        loss=ShiftLogLoss,
-        loss_kwargs_ranges=dict(
-            shift=shift_range
-        ),
+        #loss=ShiftLogLoss,
+        #loss_kwargs_ranges=dict(
+        #    shift=shift_range
+        #),
         optimizer="Adam",
         optimizer_kwargs_ranges=dict(
             lr=lr_range
@@ -107,7 +111,7 @@ for exp in experiments:
         # Runtime configuration
         device='gpu',
         stopper="early",
-        stopper_kwargs=dict(frequency=10, patience=2, relative_delta=0.002)
+        stopper_kwargs=dict(frequency=5, patience=2, relative_delta=0.002)
     )
 
     save_path = results_path_base + "/" + exp_name

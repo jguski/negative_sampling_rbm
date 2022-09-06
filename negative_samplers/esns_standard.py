@@ -37,7 +37,7 @@ class ESNSStandard(ESNS):
 
         conf = defaultdict(set)
         for triple in self.mapped_triples:
-            triple_list = triple.numpy().tolist()
+            triple_list = triple.to("cpu").numpy().tolist()
             conf[triple[column].item()].add(tuple(triple_list[:column] + triple_list[column+1:]))
 
         for e1_idx in tqdm(range(self.num_entities)):
@@ -56,16 +56,21 @@ class ESNSStandard(ESNS):
             self.logger.info("Negative sampling quality analysis after epoch {}".format(epoch))
 
             if not any(self.random_triples_ids):
+                # to ensure that always the same triples are considered
+                np.random.seed(42)
                 self.random_triples_ids = np.random.choice(self.mapped_triples.size()[0], len(self.random_triples_ids))
+                
+
+            # create dictionary with similarities
+            conf = defaultdict(set)
+            for triple in self.mapped_triples:
+                triple_list = triple.numpy().tolist()
+                conf[triple[column].item()].add(tuple(triple_list[:column] + triple_list[column+1:]))
+
 
             for i in self.random_triples_ids:
                 entity_to_replace = self.mapped_triples[i,column]
                 # compute similarity values of all e_j with e_i
-                conf = defaultdict(set)
-                for triple in self.mapped_triples:
-                    triple_list = triple.numpy().tolist()
-                    conf[triple[column].item()].add(tuple(triple_list[:column] + triple_list[column+1:]))
-
                 similarities = [0]*self.num_entities
                 for entity in range(self.num_entities):
                     if entity_to_replace != entity:
@@ -91,7 +96,7 @@ class ESNSStandard(ESNS):
                 
                 minus_distances["nns"] = [i[0] for i in (self.model.score_hrt(nns) - original_triple_score).cpu().detach().numpy()]
 
-                save_path = self.ns_qual_analysis_path + '/{}/{}'.format(self.dataset, self.__class__.__name__ + "_" + self.similarity_function.__name__)
+                save_path = self.ns_qual_analysis_path
                 Path(save_path).mkdir(parents=True, exist_ok=True)
                 np.savez(save_path + "/triple_{}_after_epoch_{}.npz".format(i, epoch), **minus_distances)
 			

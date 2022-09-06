@@ -1,19 +1,16 @@
 import os
-from syslog import LOG_SYSLOG
 from modified_pykeen.hpo_modified import hpo_pipeline
 from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopModified
-from negative_samplers.esns_standard import ESNSStandard
-from negative_samplers.esns_relaxed import ESNSRelaxed
-from negative_samplers.esns_ridle import ESNSRidle
+from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle
 from losses.custom_losses import ShiftLogLoss
 from pykeen.datasets import get_dataset
 
 experiments = [
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "basic"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
@@ -34,7 +31,7 @@ ns_qual_analysis_every=0
 
 results_path_base = "Output/hpo"
 num_epochs=1000
-n_trials=20
+n_trials=10
 device="gpu"
 
 embedding_dim_range = dict(type='categorical', choices=[50,100,200])

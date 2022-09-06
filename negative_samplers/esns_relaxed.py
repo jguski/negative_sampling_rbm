@@ -63,6 +63,8 @@ class ESNSRelaxed(ESNS):
             self.logger.info("Negative sampling quality analysis after epoch {}".format(epoch))
 
             if not any(self.random_triples_ids):
+                # to ensure that always the same triples are considered
+                np.random.seed(42)
                 self.random_triples_ids = np.random.choice(self.mapped_triples.size()[0], len(self.random_triples_ids))
 
             relation_matrix = self._create_relation_matrix(column)
@@ -93,7 +95,7 @@ class ESNSRelaxed(ESNS):
                 
                 minus_distances["nns"] = [i[0] for i in (self.model.score_hrt(nns) - original_triple_score).cpu().detach().numpy()]
 
-                save_path = self.ns_qual_analysis_path + '/{}/{}'.format(self.dataset, self.__class__.__name__ + "_" + self.similarity_function.__name__)
+                save_path = self.ns_qual_analysis_path
                 Path(save_path).mkdir(parents=True, exist_ok=True)
                 np.savez(save_path + "/triple_{}_after_epoch_{}.npz".format(i, epoch), **minus_distances)
 

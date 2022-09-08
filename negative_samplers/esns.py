@@ -82,21 +82,29 @@ class ESNS(BernoulliNegativeSampler):
             self.eii_t = scipy.sparse.load_npz(filename_base + '_t.npz').tolil()
 
         # get top self.index_column_size similar entities
-        if self.index_column_size != 0:
+        if self.index_column_size >= 0:
             ent = 0
             for data, row in zip(self.eii_h.data, self.eii_h.rows):
-                if self.index_column_size < len(row):
+                if self.index_column_size == 0:
+                    self.eii_h.data[ent] = []
+                    self.eii_h.rows[ent] = []
+                elif self.index_column_size < len(row):
                     d, r = zip(*sorted(zip(data, row), reverse=True)[:self.index_column_size])
                     self.eii_h.data[ent] = list(d)
                     self.eii_h.rows[ent] = list(r)
                 ent +=1
             ent = 0
             for data, row in zip(self.eii_t.data, self.eii_t.rows):
-                if self.index_column_size < len(row):
+                if self.index_column_size == 0:
+                    self.eii_t.data[ent] = []
+                    self.eii_t.rows[ent] = []
+                elif self.index_column_size < len(row):
                     d, r = zip(*sorted(zip(data, row), reverse=True)[:self.index_column_size])
                     self.eii_t.data[ent] = list(d)
                     self.eii_t.rows[ent] = list(r)
                 ent += 1
+
+        print(self.eii_h)
 
 
     def _similar_ent(self, original, candidate, index):

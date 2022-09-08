@@ -87,37 +87,39 @@ for exp in experiments:
     seeds=np.random.random_integers(0, 2000000000, n_iterations)
     # loop to train model n_iterations times
     for it in range(n_iterations):
-        negative_sampler_kwargs['ns_qual_analysis_path'] = quality_analysis_path + "/" + exp_name + "/iteration_{:02d}".format(it)
+        if "esns" in exp["negative_sampler"]:
+            negative_sampler_kwargs['ns_qual_analysis_path'] = quality_analysis_path + "/" + exp_name + "/iteration_{:02d}".format(it)
+        
         seed=seeds[it]
 
         results= pipeline(
-            dataset=exp["dataset"],
-            model=exp["model"],
-            model_kwargs=dict(
-                embedding_dim=embedding_dim,
-            ),
-            negative_sampler=neg_samplers_dict[exp["negative_sampler"]],
-            negative_sampler_kwargs=negative_sampler_kwargs,
-            # Training configuration
-            training_kwargs=dict(
-                batch_size=batch_size,
-                num_epochs=num_epochs,
-                use_tqdm_batch=False,
-                checkpoint_name=os.getcwd()+ '/' + checkpoint_path + '/' + exp_name +'.pt',
-            ),  
-            loss_kwargs=dict(
-                margin=margin,
-            ),
-            optimizer_kwargs=dict(
-                lr=lr,
-            ),
-            training_loop=training_loop,
-            # Runtime configuration
-            random_seed=seed,
-            device=device,
-            stopper="early",
-            stopper_kwargs=dict(frequency=5, patience=2, relative_delta=0.002)
-        )
+                dataset=exp["dataset"],
+                model=exp["model"],
+                model_kwargs=dict(
+                    embedding_dim=embedding_dim,
+                ),
+                negative_sampler=neg_samplers_dict[exp["negative_sampler"]],
+                negative_sampler_kwargs=negative_sampler_kwargs,
+                # Training configuration
+                training_kwargs=dict(
+                    batch_size=batch_size,
+                    num_epochs=num_epochs,
+                    use_tqdm_batch=False,
+                    checkpoint_name=os.getcwd()+ '/' + checkpoint_path + '/' + exp_name +'.pt',
+                ),  
+                loss_kwargs=dict(
+                    margin=margin,
+                ),
+                optimizer_kwargs=dict(
+                    lr=lr,
+                ),
+                training_loop=training_loop,
+                # Runtime configuration
+                random_seed=seed,
+                device=device,
+                stopper="early",
+                stopper_kwargs=dict(frequency=10, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
+            )
 
         save_path = results_path_base + "/" + exp_name + "/iteration_{:02d}".format(it)
         os.makedirs(save_path, exist_ok=True)

@@ -108,7 +108,7 @@ for exp in experiments:
         # Runtime configuration
         device='gpu',
         stopper="early",
-        stopper_kwargs=dict(frequency=10, patience=2, relative_delta=0.002)
+        stopper_kwargs=dict(frequency=10, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
     )
 
     save_path = results_path_base + "/" + exp_name

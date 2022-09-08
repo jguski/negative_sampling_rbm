@@ -64,7 +64,7 @@ class ESNSStandard(ESNS):
             # create dictionary with similarities
             conf = defaultdict(set)
             for triple in self.mapped_triples:
-                triple_list = triple.numpy().tolist()
+                triple_list = triple.to("cpu").numpy().tolist()
                 conf[triple[column].item()].add(tuple(triple_list[:column] + triple_list[column+1:]))
 
 

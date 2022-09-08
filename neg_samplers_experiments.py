@@ -8,8 +8,7 @@ from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle
 from losses.custom_losses import ShiftLogLoss
 
 experiments = [
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "Nations", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
     {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
     {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},

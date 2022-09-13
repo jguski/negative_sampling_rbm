@@ -104,9 +104,6 @@ class ESNS(BernoulliNegativeSampler):
                     self.eii_t.rows[ent] = list(r)
                 ent += 1
 
-        print(self.eii_h)
-
-
     def _similar_ent(self, original, candidate, index):
         shape = original.shape
         original = original.reshape(-1)
@@ -145,6 +142,7 @@ class ESNS(BernoulliNegativeSampler):
             head_i = np.tile(head_idx.reshape(-1, 1), self.sampling_size)
             probs = self._similar_ent(head_i, h_cand, index)
             _, h_new = torch.topk(probs, self.q_set_size, dim=-1)
+
             h_idx = torch.arange(0, head.shape[0]).type(torch.LongTensor).unsqueeze(1).expand(-1, self.q_set_size)
             # create array with q_set_size (columns) candidates per triple in selection (rows) and turn into a torch tensor
             h_rep = h_cand[h_idx, h_new]

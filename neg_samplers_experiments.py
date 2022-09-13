@@ -9,10 +9,10 @@ from losses.custom_losses import ShiftLogLoss
 
 experiments = [
     #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
+    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "basic"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
@@ -113,6 +113,10 @@ for exp in experiments:
                     lr=lr,
                 ),
                 training_loop=training_loop,
+                regularizer="LpRegularizer",
+                regularizer_kwargs=dict(
+                    weight=0.0001,
+                ),
                 # Runtime configuration
                 random_seed=seed,
                 device=device,

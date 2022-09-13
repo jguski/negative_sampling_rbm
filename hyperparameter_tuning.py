@@ -105,6 +105,10 @@ for exp in experiments:
         #    weights=dict(type='categorical', choices=[0.1,0.01, 0.001])
         #),
         training_loop=training_loop,
+        regularizer="LpRegularizer",
+        regularizer_kwargs=dict(
+            weight=0.0001,
+        ),
         # Runtime configuration
         device='gpu',
         stopper="early",

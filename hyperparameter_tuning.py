@@ -6,38 +6,37 @@ from losses.custom_losses import ShiftLogLoss
 from pykeen.datasets import get_dataset
 
 experiments = [
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "bernoulli"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "basic"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "bernoulli"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
 ]
 
 
-neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle, "esns_standard": ESNSStandard}
+neg_samplers_dict = {"basic": "basic", "bernoulli": "bernoulli", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle, "esns_standard": ESNSStandard}
 
 index_column_size=100
 index_path_base = "EII"
-sampling_size=100
-q_set_size=50
+sampling_size = 100
+q_set_size = 50
+batch_size=1024
+lr = 0.001
+regularization_weight = 0.0001
 # no quality analysis of selected triples for hpo
 n_triples_for_ns_qual_analysis=0
 ns_qual_analysis_every=0
 
 results_path_base = "Output/hpo"
-num_epochs=1000
-n_trials=10
-device="gpu"
+num_epochs = 1000
+n_trials = 25
+device = "gpu"
 
 embedding_dim_range = dict(type='categorical', choices=[50,100,200])
-batch_size_range = dict(type='categorical', choices=[512, 1024, 2048])
-lr_range=dict(type='categorical', choices=[0.00005, 0.0001, 0.0005, 0.001, 0.01])
-shift_range=dict(type=int, low=5, high=25, step=1)
+shift_range = dict(type=int, low=0, high=25, step=1)
 
 if not os.path.isdir(results_path_base):
     os.makedirs(results_path_base)
@@ -89,30 +88,34 @@ for exp in experiments:
         training_kwargs=dict(
             num_epochs=num_epochs,
             use_tqdm_batch=False,
+            batch_size=batch_size,
         ),  
-        training_kwargs_ranges=dict(
-            batch_size=batch_size_range
-        ),
-        #loss=ShiftLogLoss,
-        #loss_kwargs_ranges=dict(
-        #    shift=shift_range
+        #training_kwargs_ranges=dict(
+        #    batch_size=batch_size_range
         #),
-        optimizer="Adam",
-        optimizer_kwargs_ranges=dict(
-            lr=lr_range
+        loss=ShiftLogLoss,
+        loss_kwargs_ranges=dict(
+            shift=shift_range
         ),
+        optimizer="Adam",
+        optimizer_kwargs=dict(
+            lr=lr,
+        ),
+        #optimizer_kwargs_ranges=dict(
+        #    lr=lr_range
+        #  ),
         #regularizer_kwargs_ranges=dict(
         #    weights=dict(type='categorical', choices=[0.1,0.01, 0.001])
         #),
         training_loop=training_loop,
         regularizer="LpRegularizer",
         regularizer_kwargs=dict(
-            weight=0.0001,
+            weight=regularization_weight,
         ),
         # Runtime configuration
         device='gpu',
         stopper="early",
-        stopper_kwargs=dict(frequency=10, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
+        stopper_kwargs=dict(frequency=20, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
     )
 
     save_path = results_path_base + "/" + exp_name

@@ -10,7 +10,7 @@ class ShiftLogLoss(DeltaPointwiseLoss):
     )
 
     def __init__(self, reduction: str = "sum", shift = 11) -> None:
-        super().__init__(margin=0.0, reduction=reduction, margin_activation=LogSigmoid())
+        super().__init__(margin=0.0, reduction=reduction)
         self.shift = shift
 
     def forward(

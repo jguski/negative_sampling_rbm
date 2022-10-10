@@ -7,22 +7,24 @@ from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopM
 from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle
 from losses.custom_losses import ShiftLogLoss
 
+
 experiments = [
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    #{"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "bernoulli"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
+    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "basic"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "bernoulli"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
+    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
 ]
 
 
-
-neg_samplers_dict = {"basic": "basic", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle, "esns_standard": ESNSStandard}
+neg_samplers_dict = {"basic": "basic", "bernoulli": "bernoulli", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle, "esns_standard": ESNSStandard}
 
 n_iterations=3
 index_column_size=100
@@ -51,19 +53,18 @@ for exp in experiments:
     exp["exp_name"] = exp_name
     print("Training for {}".format(exp_name))
 
+    lr = 0.001
+    batch_size = 1024
+
     try:
         parameters_path = hpo_path + "/" + exp_name + "/best_pipeline/pipeline_config.json"
         hpo = json.load(open(parameters_path))
         embedding_dim = hpo["pipeline"]["model_kwargs"]["embedding_dim"]
-        lr = hpo["pipeline"]["optimizer_kwargs"]["lr"]
-        batch_size = hpo["pipeline"]["training_kwargs"]["batch_size"]
-        margin = hpo["pipeline"]["loss_kwargs"]["margin"]
+        shift = hpo["pipeline"]["loss_kwargs"]["shift"]
     except FileNotFoundError:
         logger.warning("No file found under {}. Using default hyperparameters instead.".format(parameters_path))
         embedding_dim = 100
-        lr = 0.001
-        batch_size = 64
-        margin = 1
+        shift = 0
 
 
     if "esns" in exp["negative_sampler"]:
@@ -106,8 +107,9 @@ for exp in experiments:
                     use_tqdm_batch=False,
                     checkpoint_name=os.getcwd()+ '/' + checkpoint_path + '/' + exp_name +'.pt',
                 ),  
+                loss=ShiftLogLoss,
                 loss_kwargs=dict(
-                    margin=margin,
+                    shift = shift
                 ),
                 optimizer_kwargs=dict(
                     lr=lr,
@@ -121,7 +123,7 @@ for exp in experiments:
                 random_seed=seed,
                 device=device,
                 stopper="early",
-                stopper_kwargs=dict(frequency=10, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
+                stopper_kwargs=dict(frequency=20, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
             )
 
         save_path = results_path_base + "/" + exp_name + "/iteration_{:02d}".format(it)

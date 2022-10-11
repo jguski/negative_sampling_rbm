@@ -6,14 +6,15 @@ from losses.custom_losses import ShiftLogLoss
 from pykeen.datasets import get_dataset
 
 experiments = [
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "bernoulli"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    {"model": "DistMult", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "DistMult", "dataset": "YAGO3-10", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "DistMult", "dataset": "WN18RR", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "RotatE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "RotatE", "dataset": "YAGO3-10", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": "RotatE", "dataset": "WN18RR", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "bernoulli"},
     {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    {"model": "TransE", "dataset": "WN18RR", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
 ]
 
 
@@ -67,6 +68,14 @@ for exp in experiments:
         negative_sampler_kwargs=dict(num_negs_per_pos=1)
         training_loop = SLCWATrainingLoop
 
+    if exp["model"] == "TransE":
+        model_kwargs=dict(
+            scoring_fct_norm=1
+        )
+    else:
+        model_kwargs=dict()
+
+
     # load dataset beforehand so that validation set can be used for evaluation instead of testing set
     dataset_instance = get_dataset(dataset=exp["dataset"])
 
@@ -76,9 +85,7 @@ for exp in experiments:
         validation=dataset_instance.validation,
         testing=dataset_instance.validation,
         model=exp["model"],
-        model_kwargs=dict(
-            scoring_fct_norm=1
-        ),
+        model_kwargs=model_kwargs,
         model_kwargs_ranges=dict(
             embedding_dim=embedding_dim_range,
         ),
@@ -118,6 +125,6 @@ for exp in experiments:
         stopper_kwargs=dict(frequency=20, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
     )
 
-    save_path = results_path_base + "/" + exp_name
+    save_path = results_path_base + "/" + "-".join(list(exp.values())[0:2])
     os.makedirs(save_path)
     results.save_to_directory(save_path)

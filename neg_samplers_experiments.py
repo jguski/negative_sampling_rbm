@@ -7,27 +7,24 @@ from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopM
 from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle
 from losses.custom_losses import ShiftLogLoss
 
+model = "TransE"
+dataset = "FB15k-237"
 
 experiments = [
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "bernoulli"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    {"model": "TransE", "dataset": "FB15k-237", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "basic"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "bernoulli"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    {"model": "TransE", "dataset": "YAGO3-10", "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
+    {"model": model, "dataset": dataset, "negative_sampler": "basic"},
+    {"model": model, "dataset": dataset, "negative_sampler": "bernoulli"},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "index_column_size": 0},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "index_column_size": 1000},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
 ]
 
 
 neg_samplers_dict = {"basic": "basic", "bernoulli": "bernoulli", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle, "esns_standard": ESNSStandard}
 
 n_iterations=3
-index_column_size=100
 index_path_base = "EII"
 sampling_size=100
 q_set_size=50
@@ -53,11 +50,16 @@ for exp in experiments:
     exp["exp_name"] = exp_name
     print("Training for {}".format(exp_name))
 
+    if "index_column_size" in exp.keys():
+        index_column_size = exp["index_column_size"]
+    else:
+        index_column_size = 100
+    
     lr = 0.001
     batch_size = 1024
 
     try:
-        parameters_path = hpo_path + "/" + exp_name + "/best_pipeline/pipeline_config.json"
+        parameters_path = hpo_path + "/" + "-".join(list(exp.values())[0:2]) + "/best_pipeline/pipeline_config.json"
         hpo = json.load(open(parameters_path))
         embedding_dim = hpo["pipeline"]["model_kwargs"]["embedding_dim"]
         shift = hpo["pipeline"]["loss_kwargs"]["shift"]

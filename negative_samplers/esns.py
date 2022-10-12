@@ -153,7 +153,9 @@ class ESNS(BernoulliNegativeSampler):
             rela = rela.unsqueeze(1).expand_as(h_cand).flatten().to(self.model.device)
             
             candidate_triples = torch.stack((h_cand.flatten(), rela, tail)).t()
-            scores = self.model.score_hrt(candidate_triples)
+
+            with torch.no_grad():
+                scores = self.model.score_hrt(candidate_triples)
             scores = scores.view(n, -1)
 
             probs = scores
@@ -181,8 +183,9 @@ class ESNS(BernoulliNegativeSampler):
             rela = rela.unsqueeze(1).expand_as(t_cand).flatten()
 
             candidate_triples = torch.stack((head, rela, t_cand.flatten())).t()
-
-            scores = self.model.score_hrt(candidate_triples)
+            
+            with torch.no_grad():
+                scores = self.model.score_hrt(candidate_triples)
             scores = scores.view(n, -1)
 
             probs = scores

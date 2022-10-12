@@ -46,7 +46,7 @@ logger = logging.getLogger()
 
 for exp in experiments:
     # parameter setup
-    exp_name = "-".join(list(exp.values()))
+    exp_name = "-".join(str(v) for v in list(exp.values()))
     exp["exp_name"] = exp_name
     print("Training for {}".format(exp_name))
 
@@ -63,6 +63,7 @@ for exp in experiments:
         hpo = json.load(open(parameters_path))
         embedding_dim = hpo["pipeline"]["model_kwargs"]["embedding_dim"]
         shift = hpo["pipeline"]["loss_kwargs"]["shift"]
+        print("Loaded parameters from hpo run.")
     except FileNotFoundError:
         logger.warning("No file found under {}. Using default hyperparameters instead.".format(parameters_path))
         embedding_dim = 100
@@ -79,6 +80,8 @@ for exp in experiments:
             ns_qual_analysis_every=ns_qual_analysis_every,
             logging_level="INFO"
         )
+        if "rbm_layer" in exp.keys():
+            negative_sampler_kwargs["rbm_layer"] = exp["rbm_layer"]
         training_loop=SLCWATrainingLoopModified
     else:
         negative_sampler_kwargs=dict()
@@ -87,50 +90,60 @@ for exp in experiments:
     # get a reproducible list of seeds for the iterations
     np.random.seed(42)
     seeds=np.random.random_integers(0, 2000000000, n_iterations)
+    it = 0
     # loop to train model n_iterations times
-    for it in range(n_iterations):
-        if "esns" in exp["negative_sampler"]:
-            negative_sampler_kwargs['ns_qual_analysis_path'] = quality_analysis_path + "/" + exp_name + "/iteration_{:02d}".format(it)
-        
-        seed=seeds[it]
+    while True:
+        try:
 
-        results= pipeline(
-                dataset=exp["dataset"],
-                model=exp["model"],
-                model_kwargs=dict(
-                    embedding_dim=embedding_dim,
-                ),
-                negative_sampler=neg_samplers_dict[exp["negative_sampler"]],
-                negative_sampler_kwargs=negative_sampler_kwargs,
-                # Training configuration
-                training_kwargs=dict(
-                    batch_size=batch_size,
-                    num_epochs=num_epochs,
-                    use_tqdm_batch=False,
-                    checkpoint_name=os.getcwd()+ '/' + checkpoint_path + '/' + exp_name +'.pt',
-                ),  
-                loss=ShiftLogLoss,
-                loss_kwargs=dict(
-                    shift = shift
-                ),
-                optimizer_kwargs=dict(
-                    lr=lr,
-                ),
-                training_loop=training_loop,
-                regularizer="LpRegularizer",
-                regularizer_kwargs=dict(
-                    weight=0.0001,
-                ),
-                # Runtime configuration
-                random_seed=seed,
-                device=device,
-                stopper="early",
-                stopper_kwargs=dict(frequency=20, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
-            )
+            if "esns" in exp["negative_sampler"]:
+                negative_sampler_kwargs['ns_qual_analysis_path'] = quality_analysis_path + "/" + exp_name + "/iteration_{:02d}".format(it)
+            
+            seed=seeds[it]
 
-        save_path = results_path_base + "/" + exp_name + "/iteration_{:02d}".format(it)
-        os.makedirs(save_path, exist_ok=True)
-        results.save_to_directory(save_path)
+            results= pipeline(
+                    dataset=exp["dataset"],
+                    model=exp["model"],
+                    model_kwargs=dict(
+                        embedding_dim=embedding_dim,
+                    ),
+                    negative_sampler=neg_samplers_dict[exp["negative_sampler"]],
+                    negative_sampler_kwargs=negative_sampler_kwargs,
+                    # Training configuration
+                    training_kwargs=dict(
+                        batch_size=batch_size,
+                        num_epochs=num_epochs,
+                        use_tqdm_batch=False,
+                        checkpoint_name=os.getcwd()+ '/' + checkpoint_path + '/' + exp_name +'.pt',
+                    ),  
+                    loss=ShiftLogLoss,
+                    loss_kwargs=dict(
+                        shift = shift
+                    ),
+                    optimizer_kwargs=dict(
+                        lr=lr,
+                    ),
+                    training_loop=training_loop,
+                    regularizer="LpRegularizer",
+                    regularizer_kwargs=dict(
+                        weight=0.0001,
+                    ),
+                    # Runtime configuration
+                    random_seed=seed,
+                    device=device,
+                    stopper="early",
+                    stopper_kwargs=dict(frequency=20, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
+                )
 
-        # remove checkpoint so it will not be loaded in next iteration
-        os.remove(checkpoint_path + '/' + exp_name +'.pt')
+            save_path = results_path_base + "/" + exp_name + "/iteration_{:02d}".format(it)
+            os.makedirs(save_path, exist_ok=True)
+            results.save_to_directory(save_path)
+
+            # remove checkpoint so it will not be loaded in next iteration
+            os.remove(checkpoint_path + '/' + exp_name +'.pt')
+
+            it += 1
+            if it==n_iterations:
+                break
+
+        except:
+            continue

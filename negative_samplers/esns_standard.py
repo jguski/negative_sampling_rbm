@@ -60,13 +60,12 @@ class ESNSStandard(ESNS):
                 np.random.seed(42)
                 self.random_triples_ids = np.random.choice(self.mapped_triples.size()[0], len(self.random_triples_ids))
                 
-
             # create dictionary with similarities
             conf = defaultdict(set)
+            
             for triple in self.mapped_triples:
                 triple_list = triple.to("cpu").numpy().tolist()
                 conf[triple[column].item()].add(tuple(triple_list[:column] + triple_list[column+1:]))
-
 
             for i in self.random_triples_ids:
                 entity_to_replace = self.mapped_triples[i,column]
@@ -89,12 +88,12 @@ class ESNSStandard(ESNS):
                 sns[:,-1] = torch.Tensor(sns_entities)
                 nns = self.mapped_triples[i].repeat(len(nns_entities),1)
                 nns[:,-1] = torch.Tensor(nns_entities)
-                original_triple_score = self.model.score_hrt(self.mapped_triples[None,i]).detach()
 
-                minus_distances = {}
-                minus_distances["sns"] = [i[0] for i in (self.model.score_hrt(sns) - original_triple_score).cpu().detach().numpy()]
-                
-                minus_distances["nns"] = [i[0] for i in (self.model.score_hrt(nns) - original_triple_score).cpu().detach().numpy()]
+                with torch.no_grad():
+                    original_triple_score = self.model.score_hrt(self.mapped_triples[None,i]).detach()
+                    minus_distances = {}
+                    minus_distances["sns"] = [i[0] for i in (self.model.score_hrt(sns) - original_triple_score).cpu().detach().numpy()]
+                    minus_distances["nns"] = [i[0] for i in (self.model.score_hrt(nns) - original_triple_score).cpu().detach().numpy()]
 
                 save_path = self.ns_qual_analysis_path
                 Path(save_path).mkdir(parents=True, exist_ok=True)

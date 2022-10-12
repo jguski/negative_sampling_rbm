@@ -8,17 +8,17 @@ from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle
 from losses.custom_losses import ShiftLogLoss
 
 model = "TransE"
-dataset = "FB15k-237"
+dataset = "Countries"
 
 experiments = [
-    {"model": model, "dataset": dataset, "negative_sampler": "basic"},
-    {"model": model, "dataset": dataset, "negative_sampler": "bernoulli"},
+    #{"model": model, "dataset": dataset, "negative_sampler": "basic"},
+    #{"model": model, "dataset": dataset, "negative_sampler": "bernoulli"},
     {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "index_column_size": 0},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "index_column_size": 1000},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
+    #{"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "index_column_size": 0},
+    #{"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "index_column_size": 1000},
+    #{"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
+    #{"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
+    #{"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
 ]
 
 
@@ -28,8 +28,8 @@ n_iterations=3
 index_path_base = "EII"
 sampling_size=100
 q_set_size=50
-n_triples_for_ns_qual_analysis=20
-ns_qual_analysis_every=20
+n_triples_for_ns_qual_analysis=2#0
+ns_qual_analysis_every=2#0
 
 
 results_path_base = "Output/Results"

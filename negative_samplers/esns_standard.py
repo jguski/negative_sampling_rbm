@@ -68,7 +68,7 @@ class ESNSStandard(ESNS):
                 conf[triple[column].item()].add(tuple(triple_list[:column] + triple_list[column+1:]))
 
             for i in self.random_triples_ids:
-                entity_to_replace = self.mapped_triples[i,column]
+                entity_to_replace = self.mapped_triples[i,column].item()
                 # compute similarity values of all e_j with e_i
                 similarities = [0]*self.num_entities
                 for entity in range(self.num_entities):
@@ -97,7 +97,7 @@ class ESNSStandard(ESNS):
 
                 save_path = self.ns_qual_analysis_path
                 Path(save_path).mkdir(parents=True, exist_ok=True)
-                np.savez(save_path + "/triple_{}_after_epoch_{}.npz".format(i, epoch), **minus_distances)
+                #np.savez(save_path + "/triple_{}_after_epoch_{}.npz".format(i, epoch), **minus_distances)
 			
 
 

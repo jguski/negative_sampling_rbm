@@ -31,6 +31,7 @@ class ESNS(BernoulliNegativeSampler):
         model: Model,
         dataset: Dataset,
         logging_level: str = "INFO",
+        no_exploration: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(mapped_triples=mapped_triples, **kwargs)
@@ -40,6 +41,7 @@ class ESNS(BernoulliNegativeSampler):
         self.max_index_column_size = min(self.num_entities, max_index_column_size)
         self.sampling_size = sampling_size
         self.q_set_size = min(self.num_entities, q_set_size)
+        self.no_exploration = no_exploration
         self.similarity_function=SimilarityFactory.get(similarity_metric)
         # for NS quality analysis: Init empty list to be filled with random triple ids later
         self.random_triples_ids = [None] * n_triples_for_ns_qual_analysis
@@ -129,11 +131,30 @@ class ESNS(BernoulliNegativeSampler):
             the maximum index value at the chosen position
         """
 
-        head = batch[selection, COLUMN_HEAD]
-        tail = batch[selection, COLUMN_TAIL]
-        rela = batch[selection, COLUMN_RELATION]
-        # uniform generate samples
-        if index == COLUMN_HEAD:
+        # return straight away if size of selection happens to be zero (function would crash otherwise)
+        if size == 0:
+            return
+
+        elif self.no_exploration:
+            # sample only from EII (no exploration)
+            eii = (self.eii_h if index == COLUMN_HEAD else self.eii_t)
+            # get the indices of the original entities (to be corrupted)
+            entities_to_corrupt = batch[selection,index]
+            # read similar entities for the ones to be corrupted from EII
+            similar_entities = [eii[i].nonzero()[-1] for i in entities_to_corrupt]
+            # corrupt entities by either a random element from their EII entry or (if their EII entry is empty) a random entity
+            replacement = torch.from_numpy(np.array([np.random.choice(i, size=1) 
+                if i.size!=0 
+                else np.random.choice(self.num_entities, size=1) 
+                for i in similar_entities]))
+            replacement = replacement.type(torch.LongTensor).to(self.model.device)
+
+        elif index == COLUMN_HEAD:
+            # exploration / exploitation mechanism from paper draft (for head)
+            head = batch[selection, COLUMN_HEAD]
+            tail = batch[selection, COLUMN_TAIL]
+            rela = batch[selection, COLUMN_RELATION]
+            
             # draw self.sampling_size random samples for each triple in selection
             h_cand = np.random.choice(max_index, (head.shape[0], self.sampling_size))
             # move ids of original heads to numpy
@@ -160,9 +181,7 @@ class ESNS(BernoulliNegativeSampler):
 
             probs = scores
 
-            #probs = self.model.prob(h_cand, tail, rela)
             _, h_new = torch.topk(probs, 1, dim=-1)
-
             row_idx = torch.arange(0, n).type(torch.LongTensor)
             if row_idx.size() != h_new.size():
                 row_idx = row_idx.unsqueeze(1).expand_as(h_new)
@@ -170,6 +189,11 @@ class ESNS(BernoulliNegativeSampler):
             replacement = torch.LongTensor(h_idx).to(self.model.device)
 
         else:
+            # exploration / exploitation mechanism from paper draft (for tail)
+            head = batch[selection, COLUMN_HEAD]
+            tail = batch[selection, COLUMN_TAIL]
+            rela = batch[selection, COLUMN_RELATION]
+
             t_cand = np.random.choice(max_index, (head.shape[0], self.sampling_size))
             tail_idx = tail.cpu().numpy()
             tail_i = np.tile(tail_idx.reshape(-1, 1), self.sampling_size)

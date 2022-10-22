@@ -2,18 +2,17 @@
 counting number of shared relations instead of relation + target pairs for similarity measure"""
 
 import torch
-from scipy import sparse
 from tqdm import tqdm
 import numpy as np
 from pathlib import Path
 
 from pykeen.typing import COLUMN_TAIL
 
-from .esns import ESNS
-from .similarity_metrics import BinarySimilarityFunction, RealSimilarityFunction
+from .esns_no_exploration import ESNSNoExploration
+from ..similarity_metrics import BinarySimilarityFunction, RealSimilarityFunction
 
 
-class ESNSRelaxed(ESNS):
+class ESNSRelaxedNoExploration(ESNSNoExploration):
 
     def _create_relation_matrix(self, column: int) -> torch.LongTensor:
         """
@@ -41,7 +40,7 @@ class ESNSRelaxed(ESNS):
         # initialize (3 x self.index_column_size x num_entities) EII tensor: Contains 3-rowed matrix for each entity, 
         # corresponding to index of the entity (row 0), indices (row 1) and similarity values (row 2) of top self.index_column_size entities
         #eii = torch.zeros(3, self.index_column_size, self.num_entities, device=self.model.device)
-        eii = sparse.csr_matrix((self.num_entities, self.num_entities)).tolil()
+        eii = np.zeros((self.num_entities, self.max_index_column_size))
 
         relation_matrix = self._create_relation_matrix(column)
         
@@ -51,10 +50,19 @@ class ESNSRelaxed(ESNS):
             similarities = self.similarity_function.compute(relation_matrix=relation_matrix, mapped_triples=self.mapped_triples, head_or_tail=column, entity_id=i)
             # similarity of an entity to itself should be 0
             similarities[i] = 0
-            topk_similarities = similarities.topk(k=self.max_index_column_size)
-            eii[i, topk_similarities.indices.cpu()] = topk_similarities.values.cpu()
+            values, indices = similarities.topk(k=self.max_index_column_size)
+            n_similar_entities = values.count_nonzero().item()
+            only_similar_entities = indices.cpu().numpy()[:n_similar_entities]
+            
+            if len(only_similar_entities)>0:
+                # repeat list with similar entities so that all rows have the same lengths
+                eii[i] = np.resize(only_similar_entities, self.max_index_column_size)       
+            else:
+                # if an entity has no similar entities: Fill with random entities
+                eii[i] = np.random.choice(self.num_entities, self.max_index_column_size)
 
-        return eii.tocsr()
+        return eii
+
 
 
     def quality_analysis(self, epoch, column=COLUMN_TAIL):
@@ -98,9 +106,5 @@ class ESNSRelaxed(ESNS):
                 save_path = self.ns_qual_analysis_path
                 Path(save_path).mkdir(parents=True, exist_ok=True)
                 np.savez(save_path + "/triple_{}_after_epoch_{}.npz".format(i, epoch), **minus_distances)
-
-
-
-
-                
+  
 

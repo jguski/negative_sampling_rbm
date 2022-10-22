@@ -10,10 +10,10 @@ import os
 
 from pykeen.typing import COLUMN_HEAD, COLUMN_RELATION
 
-from negative_samplers.esns_relaxed import ESNSRelaxed
+from .esns_relaxed_no_exploration import ESNSRelaxedNoExploration
 from negative_samplers.ridle.RBM import RBM
 
-class ESNSRidle(ESNSRelaxed):
+class ESNSRidleNoExploration(ESNSRelaxedNoExploration):
     def __init__(
         self,
         rbm_layer: str = "reconstructed",

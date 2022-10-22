@@ -43,7 +43,8 @@ from pykeen.utils import (
 )
 from pykeen.pipeline import PipelineResult
 
-from negative_samplers.esns import ESNS
+from negative_samplers.esns_with_exploration_mechanism.esns import ESNS
+from negative_samplers.esns_without_exploration_mechanism.esns_no_exploration import ESNSNoExploration
 
 logger = logging.getLogger(__name__)
 
@@ -459,7 +460,7 @@ def pipeline(  # noqa: C901
     else:
         negative_sampler_cls = negative_sampler_resolver.lookup(negative_sampler)
         training_loop_kwargs = dict(training_loop_kwargs)
-        if issubclass(negative_sampler_cls, ESNS):
+        if issubclass(negative_sampler_cls, ESNS) or issubclass(negative_sampler_cls, ESNSNoExploration):
             negative_sampler_kwargs["model"] = model_instance
             if dataset:
                 negative_sampler_kwargs["dataset"] = dataset

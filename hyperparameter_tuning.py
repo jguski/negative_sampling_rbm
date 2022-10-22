@@ -1,7 +1,7 @@
 import os
 from modified_pykeen.hpo_modified import hpo_pipeline
 from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopModified
-from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle
+from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle, ESNSRelaxedNoExploration, ESNSRidleNoExploration, ESNSStandardNoExploration
 from losses.custom_losses import ShiftLogLoss
 from pykeen.datasets import get_dataset
 
@@ -18,12 +18,16 @@ experiments = [
 ]
 
 
-neg_samplers_dict = {"basic": "basic", "bernoulli": "bernoulli", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle, "esns_standard": ESNSStandard}
+neg_samplers_dict = {"basic": "basic", 
+    "bernoulli": "bernoulli", 
+    "esns_relaxed": ESNSRelaxed, 'esns_relaxed_no_exploration': ESNSRelaxedNoExploration,
+    "esns_ridle": ESNSRidle, 'esns_ridle_no_exploration': ESNSRelaxedNoExploration,
+    "esns_standard": ESNSStandard, 'esns_standard_no_exploration': ESNSStandardNoExploration}
 
 index_column_size=100
 index_path_base = "EII"
-sampling_size = 100
-q_set_size = 50
+#sampling_size = 100
+#q_set_size = 50
 batch_size=1024
 lr = 0.001
 regularization_weight = 0.0001
@@ -52,8 +56,6 @@ for exp in experiments:
     if "esns" in exp["negative_sampler"]:
         negative_sampler_kwargs=dict(
             index_column_size=index_column_size,
-            sampling_size=sampling_size,
-            q_set_size=q_set_size,
             similarity_metric=exp["similarity_metric"],
             n_triples_for_ns_qual_analysis=n_triples_for_ns_qual_analysis,
             ns_qual_analysis_every=ns_qual_analysis_every,

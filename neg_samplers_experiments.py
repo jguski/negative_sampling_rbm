@@ -4,7 +4,7 @@ import logging
 import numpy as np
 from modified_pykeen.pipeline_modified import pipeline
 from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopModified
-from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle
+from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle, ESNSStandardNoExploration, ESNSRelaxedNoExploration, ESNSRidleNoExploration
 from losses.custom_losses import ShiftLogLoss
 
 model = "TransE"
@@ -16,19 +16,25 @@ experiments = [
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "index_column_size": 0},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "index_column_size": 1000},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard", "similarity_metric": "absolute", "no_exploration": "no_exploration"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed", "similarity_metric": "absolute", "no_exploration": "no_exploration"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard_no_exploration", "similarity_metric": "absolute", "index_column_size": 1000},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "compressed"}
 ]
 
 
-neg_samplers_dict = {"basic": "basic", "bernoulli": "bernoulli", "esns_relaxed": ESNSRelaxed, "esns_ridle": ESNSRidle, "esns_standard": ESNSStandard}
+neg_samplers_dict = {"basic": "basic", 
+    "bernoulli": "bernoulli", 
+    "esns_relaxed": ESNSRelaxed, 'esns_relaxed_no_exploration': ESNSRelaxedNoExploration,
+    "esns_ridle": ESNSRidle, 'esns_ridle_no_exploration': ESNSRelaxedNoExploration,
+    "esns_standard": ESNSStandard, 'esns_standard_no_exploration': ESNSStandardNoExploration}
 
 n_iterations=3
-sampling_size=100
-q_set_size=50
+#sampling_size=100 # these are the default values
+#q_set_size=50
 n_triples_for_ns_qual_analysis=20
 ns_qual_analysis_every=20
 
@@ -74,8 +80,6 @@ for exp in experiments:
     if "esns" in exp["negative_sampler"]:
         negative_sampler_kwargs=dict(
             index_column_size=index_column_size,
-            sampling_size=sampling_size,
-            q_set_size=q_set_size,
             similarity_metric=exp["similarity_metric"],
             n_triples_for_ns_qual_analysis=n_triples_for_ns_qual_analysis,
             ns_qual_analysis_every=ns_qual_analysis_every,
@@ -83,8 +87,6 @@ for exp in experiments:
         )
         if "rbm_layer" in exp.keys():
             negative_sampler_kwargs["rbm_layer"] = exp["rbm_layer"]
-        if "no_exploration" in exp.keys():
-            negative_sampler_kwargs["no_exploration"] = True
         training_loop=SLCWATrainingLoopModified
     else:
         negative_sampler_kwargs=dict()

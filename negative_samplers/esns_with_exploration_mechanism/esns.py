@@ -4,13 +4,13 @@ import numpy as np
 import os
 import logging
 
-from .similarity_metrics import SimilarityFactory
+from ..similarity_metrics import SimilarityFactory
 from pykeen.sampling import BernoulliNegativeSampler
 from pykeen.typing import COLUMN_HEAD, COLUMN_TAIL, COLUMN_RELATION, MappedTriples
 from pykeen.models import Model
 from pykeen.datasets import Dataset
 
-from .similarity_metrics import SimilarityFactory
+from ..similarity_metrics import SimilarityFactory
 
 
 class ESNS(BernoulliNegativeSampler):
@@ -20,10 +20,10 @@ class ESNS(BernoulliNegativeSampler):
         *,
         mapped_triples: MappedTriples,
         index_path: str = "Output/EII",
-        index_column_size: int,
+        index_column_size: int = 100,
         max_index_column_size: int = 100,
-        sampling_size: int,
-        q_set_size: int,
+        sampling_size: int = 100,
+        q_set_size: int = 50,
         similarity_metric: str = "absolute",
         n_triples_for_ns_qual_analysis = 0,
         ns_qual_analysis_every = 100,
@@ -31,7 +31,6 @@ class ESNS(BernoulliNegativeSampler):
         model: Model,
         dataset: Dataset,
         logging_level: str = "INFO",
-        no_exploration: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(mapped_triples=mapped_triples, **kwargs)
@@ -41,7 +40,6 @@ class ESNS(BernoulliNegativeSampler):
         self.max_index_column_size = min(self.num_entities, max_index_column_size)
         self.sampling_size = sampling_size
         self.q_set_size = min(self.num_entities, q_set_size)
-        self.no_exploration = no_exploration
         self.similarity_function=SimilarityFactory.get(similarity_metric)
         # for NS quality analysis: Init empty list to be filled with random triple ids later
         self.random_triples_ids = [None] * n_triples_for_ns_qual_analysis
@@ -134,20 +132,6 @@ class ESNS(BernoulliNegativeSampler):
         # return straight away if size of selection happens to be zero (function would crash otherwise)
         if size == 0:
             return
-
-        elif self.no_exploration:
-            # sample only from EII (no exploration)
-            eii = (self.eii_h if index == COLUMN_HEAD else self.eii_t)
-            # get the indices of the original entities (to be corrupted)
-            entities_to_corrupt = batch[selection,index]
-            # read similar entities for the ones to be corrupted from EII
-            similar_entities = [eii[i].nonzero()[-1] for i in entities_to_corrupt]
-            # corrupt entities by either a random element from their EII entry or (if their EII entry is empty) a random entity
-            replacement = torch.from_numpy(np.array([np.random.choice(i, size=1) 
-                if i.size!=0 
-                else np.random.choice(self.num_entities, size=1) 
-                for i in similar_entities]))
-            replacement = replacement.type(torch.LongTensor).to(self.model.device)
 
         elif index == COLUMN_HEAD:
             # exploration / exploitation mechanism from paper draft (for head)

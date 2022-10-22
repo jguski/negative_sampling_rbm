@@ -4,8 +4,9 @@ import logging
 import numpy as np
 from modified_pykeen.pipeline_modified import pipeline
 from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopModified
-from negative_samplers import ESNSStandard, ESNSRelaxed, ESNSRidle, ESNSStandardNoExploration, ESNSRelaxedNoExploration, ESNSRidleNoExploration
+from negative_samplers import *
 from losses.custom_losses import ShiftLogLoss
+from negative_samplers.esns_without_exploration_mechanism.baseline_no_exploration import BaselineNoExploration
 
 model = "TransE"
 dataset = "FB15k-237"
@@ -19,7 +20,7 @@ experiments = [
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard_no_exploration", "similarity_metric": "absolute", "index_column_size": 1000},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard_no_exploration", "similarity_metric": "absolute"},
     {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
     {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
     {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "compressed"}
@@ -29,8 +30,9 @@ experiments = [
 neg_samplers_dict = {"basic": "basic", 
     "bernoulli": "bernoulli", 
     "esns_relaxed": ESNSRelaxed, 'esns_relaxed_no_exploration': ESNSRelaxedNoExploration,
-    "esns_ridle": ESNSRidle, 'esns_ridle_no_exploration': ESNSRelaxedNoExploration,
-    "esns_standard": ESNSStandard, 'esns_standard_no_exploration': ESNSStandardNoExploration}
+    "esns_ridle": ESNSRidle, 'esns_ridle_no_exploration': ESNSRidleNoExploration,
+    "esns_standard": ESNSStandard, 'esns_standard_no_exploration': ESNSStandardNoExploration,
+    "baseline_no_exploration": BaselineNoExploration}
 
 n_iterations=3
 #sampling_size=100 # these are the default values
@@ -70,7 +72,7 @@ for exp in experiments:
         hpo = json.load(open(parameters_path))
         embedding_dim = hpo["pipeline"]["model_kwargs"]["embedding_dim"]
         shift = hpo["pipeline"]["loss_kwargs"]["shift"]
-        print("Loaded parameters from hpo run.")
+        print("Loaded parameters from hpo run (shift={}, embedding_dim={}).".format(shift, embedding_dim))
     except FileNotFoundError:
         logger.warning("No file found under {}. Using default hyperparameters instead.".format(parameters_path))
         embedding_dim = 100
@@ -80,6 +82,7 @@ for exp in experiments:
     if "esns" in exp["negative_sampler"]:
         negative_sampler_kwargs=dict(
             index_column_size=index_column_size,
+            max_index_column_size=index_column_size,
             similarity_metric=exp["similarity_metric"],
             n_triples_for_ns_qual_analysis=n_triples_for_ns_qual_analysis,
             ns_qual_analysis_every=ns_qual_analysis_every,

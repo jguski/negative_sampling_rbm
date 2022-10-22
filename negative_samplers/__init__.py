@@ -5,6 +5,7 @@ from .esns_with_exploration_mechanism.esns_ridle import ESNSRidle
 from .esns_without_exploration_mechanism.esns_standard_no_exploration import ESNSStandardNoExploration
 from .esns_without_exploration_mechanism.esns_relaxed_no_exploration import ESNSRelaxedNoExploration
 from .esns_without_exploration_mechanism.esns_ridle_no_exploration import ESNSRidleNoExploration
+from .esns_without_exploration_mechanism.baseline_no_exploration import BaselineNoExploration
 
 __all__ = [
     "ESNSStandard",
@@ -12,5 +13,6 @@ __all__ = [
     "ESNSRidle",
     "ESNSStandardNoExploration",
     "ESNSRelaxedNoExploration",
-    "ESNSRidleNoExploration"
+    "ESNSRidleNoExploration",
+    "BaselineNoExploration"
 ]

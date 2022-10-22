@@ -111,7 +111,7 @@ class ESNSNoExploration(BernoulliNegativeSampler):
             replacement = eii[entities_to_replace, samples_from_eii]
 
             # replace entities in batch with the sampled entities
-            batch[selection, index] =  torch.LongTensor(replacement, device=self.model.device)
+            batch[selection, index] =  torch.LongTensor(replacement).to(self.model.device)
 
 
     def corrupt_batch(self, positive_batch: torch.LongTensor) -> torch.LongTensor:

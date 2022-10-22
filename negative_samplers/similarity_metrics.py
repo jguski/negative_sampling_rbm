@@ -66,7 +66,8 @@ class SimilarityFactory():
     def get(similarity_metric) -> SimilarityFunction:   
         similarity_dict = {'absolute': AbsoluteSimilarity, 
             'jaccard': JaccardSimilarity, 
-            'cosine': CosineSimilarity}
+            'cosine': CosineSimilarity,
+            '': None}
         try:
             return similarity_dict[similarity_metric]
         except KeyError:

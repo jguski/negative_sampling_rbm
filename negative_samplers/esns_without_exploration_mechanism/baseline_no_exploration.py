@@ -11,5 +11,8 @@ class BaselineNoExploration(ESNSNoExploration):
     def _create_eii(self, column: int) -> None: 
         return np.random.choice(self.num_entities, (self.num_entities, self.max_index_column_size))
 
+    def quality_analysis(self, epoch, column=None):
+        pass
+
 
 

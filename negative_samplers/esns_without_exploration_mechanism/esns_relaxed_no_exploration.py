@@ -40,7 +40,7 @@ class ESNSRelaxedNoExploration(ESNSNoExploration):
         # initialize (3 x self.index_column_size x num_entities) EII tensor: Contains 3-rowed matrix for each entity, 
         # corresponding to index of the entity (row 0), indices (row 1) and similarity values (row 2) of top self.index_column_size entities
         #eii = torch.zeros(3, self.index_column_size, self.num_entities, device=self.model.device)
-        eii = np.zeros((self.num_entities, self.max_index_column_size))
+        eii = np.random.choice(self.num_entities, (self.num_entities, self.max_index_column_size))
 
         relation_matrix = self._create_relation_matrix(column)
         
@@ -54,12 +54,8 @@ class ESNSRelaxedNoExploration(ESNSNoExploration):
             n_similar_entities = values.count_nonzero().item()
             only_similar_entities = indices.cpu().numpy()[:n_similar_entities]
             
-            if len(only_similar_entities)>0:
-                # repeat list with similar entities so that all rows have the same lengths
-                eii[i] = np.resize(only_similar_entities, self.max_index_column_size)       
-            else:
-                # if an entity has no similar entities: Fill with random entities
-                eii[i] = np.random.choice(self.num_entities, self.max_index_column_size)
+            # replace first "only similar entities" entries of the column with similar entities
+            eii[i,:n_similar_entities] = only_similar_entities
 
         return eii
 

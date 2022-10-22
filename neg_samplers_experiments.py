@@ -20,10 +20,11 @@ experiments = [
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard_no_exploration", "similarity_metric": "absolute"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
-    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "compressed"}
+    {"model": model, "dataset": dataset, "negative_sampler": "baseline_no_exploration", "index_column_size": 500},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_standard_no_exploration", "similarity_metric": "absolute", "index_column_size": 500},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute", "index_column_size": 500},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "reconstructed", "index_column_size": 500},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "compressed", "index_column_size": 500}
 ]
 
 
@@ -37,8 +38,8 @@ neg_samplers_dict = {"basic": "basic",
 n_iterations=3
 #sampling_size=100 # these are the default values
 #q_set_size=50
-n_triples_for_ns_qual_analysis=20
-ns_qual_analysis_every=20
+n_triples_for_ns_qual_analysis=40
+ns_qual_analysis_every=40
 
 
 results_path_base = "Output/Results"
@@ -83,11 +84,12 @@ for exp in experiments:
         negative_sampler_kwargs=dict(
             index_column_size=index_column_size,
             max_index_column_size=index_column_size,
-            similarity_metric=exp["similarity_metric"],
             n_triples_for_ns_qual_analysis=n_triples_for_ns_qual_analysis,
             ns_qual_analysis_every=ns_qual_analysis_every,
             logging_level="INFO"
         )
+        if "similarity_metric" in exp.keys():
+            similarity_metric=exp["similarity_metric"]
         if "rbm_layer" in exp.keys():
             negative_sampler_kwargs["rbm_layer"] = exp["rbm_layer"]
         training_loop=SLCWATrainingLoopModified

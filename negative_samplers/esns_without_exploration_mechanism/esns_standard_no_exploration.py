@@ -32,7 +32,7 @@ class ESNSStandardNoExploration(ESNSNoExploration):
             Position of key entities (0 = head, 2 or -1 = tail). 
         """
 
-        eii = np.zeros((self.num_entities, self.max_index_column_size))
+        eii = np.random.choice(self.num_entities, (self.num_entities, self.max_index_column_size))
 
         conf = defaultdict(set)
         for triple in self.mapped_triples:
@@ -43,17 +43,15 @@ class ESNSStandardNoExploration(ESNSNoExploration):
         # TODO: find a more efficient implementation
         for i in tqdm(range(self.num_entities)):
             only_similar_entities = []
+            n_similar_entities = 0
             for j in range(self.num_entities):
                 score = conf[i].intersection(conf[j])
                 if len(score) != 0 and not (i==j):
                     only_similar_entities+= [j]
+                    n_similar_entities += 0
 
-            if len(only_similar_entities)>0:
-                # repeat list with similar entities so that all rows have the same lengths
-                eii[i] = np.resize(only_similar_entities, self.max_index_column_size)       
-            else:
-                # if an entity has no similar entities: Fill with random entities
-                eii[i] = np.random.choice(self.num_entities, self.max_index_column_size)
+            # replace first "only similar entities" entries of the column with similar entities
+            eii[i,:n_similar_entities] = only_similar_entities
          
         return eii
 

@@ -23,7 +23,7 @@ neg_samplers_dict = {"basic": "basic",
     "esns_relaxed": ESNSRelaxed, 'esns_relaxed_no_exploration': ESNSRelaxedNoExploration,
     "esns_ridle": ESNSRidle, 'esns_ridle_no_exploration': ESNSRidleNoExploration,
     "esns_standard": ESNSStandard, 'esns_standard_no_exploration': ESNSStandardNoExploration,
-    "baseline_no_exploration": BaselineNoExploration}
+    "esns_baseline_no_exploration": ESNSBaselineNoExploration}
 
 index_column_size=100
 index_path_base = "EII"

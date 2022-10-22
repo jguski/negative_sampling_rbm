@@ -6,7 +6,6 @@ from modified_pykeen.pipeline_modified import pipeline
 from modified_pykeen.slcwa_modified import SLCWATrainingLoop, SLCWATrainingLoopModified
 from negative_samplers import *
 from losses.custom_losses import ShiftLogLoss
-from negative_samplers.esns_without_exploration_mechanism.baseline_no_exploration import BaselineNoExploration
 
 model = "TransE"
 dataset = "FB15k-237"
@@ -20,7 +19,7 @@ experiments = [
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed", "similarity_metric": "absolute"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "reconstructed"},
     # {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle", "similarity_metric": "cosine", "rbm_layer": "compressed"},
-    {"model": model, "dataset": dataset, "negative_sampler": "baseline_no_exploration", "index_column_size": 500},
+    {"model": model, "dataset": dataset, "negative_sampler": "esns_baseline_no_exploration", "index_column_size": 500},
     {"model": model, "dataset": dataset, "negative_sampler": "esns_standard_no_exploration", "similarity_metric": "absolute", "index_column_size": 500},
     {"model": model, "dataset": dataset, "negative_sampler": "esns_relaxed_no_exploration", "similarity_metric": "absolute", "index_column_size": 500},
     {"model": model, "dataset": dataset, "negative_sampler": "esns_ridle_no_exploration", "similarity_metric": "cosine", "rbm_layer": "reconstructed", "index_column_size": 500},
@@ -33,7 +32,7 @@ neg_samplers_dict = {"basic": "basic",
     "esns_relaxed": ESNSRelaxed, 'esns_relaxed_no_exploration': ESNSRelaxedNoExploration,
     "esns_ridle": ESNSRidle, 'esns_ridle_no_exploration': ESNSRidleNoExploration,
     "esns_standard": ESNSStandard, 'esns_standard_no_exploration': ESNSStandardNoExploration,
-    "baseline_no_exploration": BaselineNoExploration}
+    "esns_baseline_no_exploration": ESNSBaselineNoExploration}
 
 n_iterations=3
 #sampling_size=100 # these are the default values

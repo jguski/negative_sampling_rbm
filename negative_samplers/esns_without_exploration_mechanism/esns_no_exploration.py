@@ -28,6 +28,7 @@ class ESNSNoExploration(BernoulliNegativeSampler):
         model: Model,
         dataset: Dataset,
         logging_level: str = "INFO",
+        skip_create_eii: bool=False,
         **kwargs,
     ) -> None:
         super().__init__(mapped_triples=mapped_triples, **kwargs)
@@ -48,7 +49,8 @@ class ESNSNoExploration(BernoulliNegativeSampler):
         self.logger = logging.getLogger(self.__class__.__name__ + "_" + str(id(self)))
         self.logger.setLevel(logging_level)
         
-        self._index_handling()
+        if not skip_create_eii:
+            self._index_handling()
 
     
     def _index_handling(self) -> None:
@@ -78,7 +80,7 @@ class ESNSNoExploration(BernoulliNegativeSampler):
         assert self.index_column_size > 0
 
         # get top self.index_column_size similar entities
-        self.eii_t = self.eii_t[:,:self.index_column_size]
+        self.eii_h = self.eii_h[:,:self.index_column_size]
         self.eii_t = self.eii_t[:,:self.index_column_size]
 
 

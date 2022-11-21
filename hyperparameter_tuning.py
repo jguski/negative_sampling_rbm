@@ -126,7 +126,7 @@ for exp in experiments:
         # Runtime configuration
         device='gpu',
         stopper="early",
-        stopper_kwargs=dict(frequency=20, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
+        stopper_kwargs=dict(frequency=40, patience=2, relative_delta=0.002, metric="inverse_harmonic_mean_rank")
     )
 
     save_path = results_path_base + "/" + "-".join(list(exp.values())[0:2])

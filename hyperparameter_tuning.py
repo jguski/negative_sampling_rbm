@@ -22,13 +22,12 @@ neg_samplers_dict = {"basic": "basic",
     "bernoulli": "bernoulli", 
     "esns_relaxed": ESNSRelaxed, 'esns_relaxed_no_exploration': ESNSRelaxedNoExploration,
     "esns_ridle": ESNSRidle, 'esns_ridle_no_exploration': ESNSRidleNoExploration,
-    "esns_standard": ESNSStandard, 'esns_standard_no_exploration': ESNSStandardNoExploration,
-    "esns_baseline_no_exploration": ESNSBaselineNoExploration}
+    "esns_standard": ESNSStandard, "esns_baseline_no_exploration": ESNSBaselineNoExploration}
 
 index_column_size=100
 index_path_base = "EII"
-#sampling_size = 100
-#q_set_size = 50
+sampling_size = 100
+q_set_size = 50
 batch_size=1024
 lr = 0.001
 regularization_weight = 0.0001
@@ -38,15 +37,21 @@ ns_qual_analysis_every=0
 
 results_path_base = "Output/hpo"
 num_epochs = 1000
+# define either number of trials or timeout
 n_trials = 25
+#timeout=36000
 device = "gpu"
 
 embedding_dim_range = dict(type='categorical', choices=[50,100,200])
-shift_range = dict(type=int, low=0, high=25, step=1)
+shift_range = dict(type=int, low=0, high=25, step=1) # not for DistMult and ComplEx
+# additional parameters to optimize for ComplEx (remember to uncomment range arguments in pipeline function call below)
+#lr_range = dict(type=float, low=0.001, high=0.1, log=True)
+#batch_size_range = dict(type='categorical', choices=[256,512,1024])
+#regularization_weight_range = dict(type=float, low=0.0001, high=0.1)
+#num_negs_per_pos_range = dict(type=int, low=1, high=100)
 
 if not os.path.isdir(results_path_base):
     os.makedirs(results_path_base)
-
 
 for exp in experiments:
 
@@ -57,7 +62,8 @@ for exp in experiments:
     if "esns" in exp["negative_sampler"]:
         negative_sampler_kwargs=dict(
             index_column_size=index_column_size,
-            max_column_size=index_column_size,
+            sampling_size=sampling_size,
+            q_set_size=q_set_size,
             similarity_metric=exp["similarity_metric"],
             n_triples_for_ns_qual_analysis=n_triples_for_ns_qual_analysis,
             ns_qual_analysis_every=ns_qual_analysis_every,
@@ -69,6 +75,7 @@ for exp in experiments:
             negative_sampler_kwargs["rbm_layer"] = exp["rbm_layer"]
         training_loop=SLCWATrainingLoopModified
     else:
+        #negative_sampler_kwargs=dict()
         negative_sampler_kwargs=dict(num_negs_per_pos=1)
         training_loop = SLCWATrainingLoop
 
@@ -84,6 +91,7 @@ for exp in experiments:
     dataset_instance = get_dataset(dataset=exp["dataset"])
 
     results = hpo_pipeline(
+        #timeout=timeout,
         n_trials=n_trials,
         training=dataset_instance.training,
         validation=dataset_instance.validation,
@@ -95,6 +103,9 @@ for exp in experiments:
         ),
         negative_sampler=neg_samplers_dict[exp["negative_sampler"]],
         negative_sampler_kwargs=negative_sampler_kwargs,
+        #negative_sampler_kwargs_ranges=dict(
+        #    num_negs_per_pos=num_negs_per_pos_range
+        #),
         # Training configuration
         training_kwargs=dict(
             num_epochs=num_epochs,
@@ -105,6 +116,9 @@ for exp in experiments:
         #    batch_size=batch_size_range
         #),
         loss=ShiftLogLoss,
+        #loss_kwargs=dict(
+        #    shift=0
+        #),
         loss_kwargs_ranges=dict(
             shift=shift_range
         ),
@@ -113,16 +127,16 @@ for exp in experiments:
             lr=lr,
         ),
         #optimizer_kwargs_ranges=dict(
-        #    lr=lr_range
-        #  ),
-        #regularizer_kwargs_ranges=dict(
-        #    weights=dict(type='categorical', choices=[0.1,0.01, 0.001])
+        #    lr=lr_range,
         #),
         training_loop=training_loop,
         regularizer="LpRegularizer",
         regularizer_kwargs=dict(
             weight=regularization_weight,
         ),
+        #regularizer_kwargs_ranges=dict(
+        #    weight=regularization_weight_range,
+        #),
         # Runtime configuration
         device='gpu',
         stopper="early",

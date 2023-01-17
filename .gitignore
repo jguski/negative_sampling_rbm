@@ -2,6 +2,7 @@
 Output/
 test_new_NS.ipynb
 number_of_similar_entities_esns_original_vs_relaxed.ipynb
-datasets/
-dataset/
 collect_results.py
+neg_triples_quality_analysis.py
+neg_samplers_experiments_only_10_epochs.py
+negative_samplers/esns_without_exploration_mechanism/esns_standard_no_exploration.py

@@ -89,9 +89,9 @@ class ESNSRelaxedNoExploration(ESNSNoExploration):
                 
                 # create tensors corresponding to sns and nns
                 sns = self.mapped_triples[i].repeat(len(sns_entities),1)
-                sns[:,-1] = torch.Tensor(sns_entities)
+                sns[:,column] = torch.Tensor(sns_entities)
                 nns = self.mapped_triples[i].repeat(len(nns_entities),1)
-                nns[:,-1] = torch.Tensor(nns_entities)
+                nns[:,column] = torch.Tensor(nns_entities)
 
                 with torch.no_grad():
                     original_triple_score = self.model.score_hrt(self.mapped_triples[None,i]).detach()
